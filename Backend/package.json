@@ -1,0 +1,47 @@
+{
+  "name": "api-node",
+  "version": "1.0.0",
+  "type": "module",
+  "description": " backend",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "typeorm": "typeorm",
+    "migration:generate": "typeorm migration:generate -d ./src/config/configDB.js",
+    "migration:run": "typeorm migration:run -d ./src/config/configDB.js",
+    "migration:create": "typeorm migration:create ./src/migrations",
+    "migration:revert": "typeorm migration:revert -d ./src/config/configDB.js"
+  },
+  "keywords": [
+    "node",
+    "backend",
+    "http"
+  ],
+  "author": "FelipeP",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
+    "bwip-js": "^4.5.1",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "joi": "^17.10.2",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "nodemailer": "^6.9.15",
+    "pg": "^8.13.0",
+    "typeorm": "^0.3.20",
+    "uuid": "^10.0.0",
+    "winston": "^3.14.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "eslint-config-google": "0.14.0",
+    "jsdoc": "4.0.2",
+    "nodemon": "^3.0.3",
+    "prettier": "^3.2.5"
+  }
+}

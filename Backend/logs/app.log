@@ -1,0 +1,1 @@
+2024-09-15T02:34:15.337Z [INFO]: Datos validados por Joi {"datos":{"tipo_prenda":"Camisas","cantidad_prendas":10,"fecha_adquisicion":"2024-01-01T00:00:00.000Z","nombre_proveedor":"Proveedor XYZz","costo_fardo":15000,"precios":[{"cantidad":6,"precio":1000},{"cantidad":4,"precio":2000}],"estado_fardo":"En stock","descuento_fardo":0}}

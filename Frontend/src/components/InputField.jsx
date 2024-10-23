@@ -1,0 +1,38 @@
+// InputField.jsx
+import React from 'react';
+import { FaEnvelope, FaLock } from 'react-icons/fa';  // Importa los íconos que necesites
+
+const InputField = ({
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
+  required = false,
+  error = '',
+  icon,
+}) => {
+  const IconComponent = icon === 'email' ? FaEnvelope : icon === 'lock' ? FaLock : null;
+
+  return (
+    <div className="mb-4">
+      <div className="relative">
+        {IconComponent && (
+          <IconComponent className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        )}
+        <input
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={`w-full p-2 pl-10 border rounded focus:outline-none focus:ring-2 focus:ring-purple-600 ${
+            error ? 'border-red-500' : 'border-gray-300'
+          }`}
+          required={required}
+        />
+      </div>
+      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+    </div>
+  );
+};
+
+export default InputField;
