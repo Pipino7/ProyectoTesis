@@ -17,6 +17,6 @@ router.post('/fardos/:codigo_fardo/restaurar', FardoController.restaurarFardoCon
 router.get('/fardos/:codigo_fardo', FardoController.obtenerFardoPorCodigoController);
 
 // Ruta para obtener todos los fardos
-router.get('/fardos', FardoController.obtenerTodosFardosController);
+router.get('/obtener', FardoController.obtenerTodosFardosController);
 
 export default router;
