@@ -5,10 +5,8 @@ import morgan from "morgan";
 import indexRoutes from "./routes/index.routes.js";  // Importa las rutas principales
 import cookieParser from "cookie-parser";
 import AppDataSource from './config/ConfigDB.js';
-
-
 import { handleFatalError, handleError } from "./utils/errorHandler.js";  // Manejadores de errores
-import { createAdminUser } from "./config/initialSetup.js";  // Crea el usuario admin
+import initialSetup from "./config/InitialSetup.js";  // Importa la configuración inicial
 
 /**
  * Inicia el servidor web
@@ -36,7 +34,7 @@ async function setupServer() {
 }
 
 /**
- * Inicia la API
+ * Inicia la API y realiza la configuración inicial
  */
 async function setupAPI() {
   try {
@@ -44,11 +42,11 @@ async function setupAPI() {
     await AppDataSource.initialize();  // Aquí inicializas la conexión con TypeORM
     console.log('=> Conexión a la base de datos inicializada con TypeORM');
 
+    // Realiza la configuración inicial (crea usuario admin, estados, etc.)
+    await initialSetup();
+    
     // Inicia el servidor web
     await setupServer();
-    
-    // Crea el usuario admin si es necesario
-    await createAdminUser();
   } catch (err) {
     handleFatalError(err, "/server.js -> setupAPI");  // Maneja errores fatales
   }
