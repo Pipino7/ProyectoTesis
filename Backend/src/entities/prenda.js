@@ -13,7 +13,7 @@ export const prenda = new EntitySchema({
       type: 'decimal',
       precision: 10,
       scale: 2,
-      nullable: true,  // Puede ser nulo inicialmente
+      nullable: true,  
     },
     cantidad: {
       type: 'int',
@@ -22,22 +22,20 @@ export const prenda = new EntitySchema({
     codigo_barra_prenda: {
       type: 'varchar',
       length: 255,
-      nullable: true,  // Puede ser nulo hasta que se clasifique
+      nullable: true,  
       unique: true,
-    },
-    estado_prenda: {
-      type: 'varchar',
-      length: 255,
-      nullable: false,
-      default: 'bodega',  // Estado inicial como 'bodega'
     },
     categoria_id: {
       type: 'int',
-      nullable: false,
+      nullable: true,
     },
     fardo_id: {
       type: 'int',
       nullable: true,
+    },
+    estado_id: {  
+      type: 'int',
+      nullable: false, 
     },
   },
   relations: {
@@ -47,7 +45,7 @@ export const prenda = new EntitySchema({
       joinColumn: {
         name: 'categoria_id',
       },
-      nullable: false,
+      nullable: true,
       onDelete: 'SET NULL',
     },
     fardo: {
@@ -58,6 +56,15 @@ export const prenda = new EntitySchema({
       },
       nullable: true,
       onDelete: 'CASCADE',
+    },
+    estado: {
+      type: 'many-to-one',
+      target: 'estado', 
+      joinColumn: {
+        name: 'estado_id',
+      },
+      nullable: false,
+      onDelete: 'SET NULL',
     },
     detallesVenta: {
       type: 'one-to-many',
