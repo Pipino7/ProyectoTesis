@@ -1,42 +1,17 @@
-import AppDataSource from '../config/ConfigDB.js';
-import bcrypt from 'bcryptjs';
-import usuario from '../entities/usuario.js';
+import createAdminUser from '../seeders/usuario.seeder.js';
+import seedEstados from '../seeders/estado.seeder.js';
 
-
-/**
- * Crea el rol 'admin' y el usuario 'admin' por defecto en la base de datos.
- * @async
- * @function createAdminUser
- * @returns {Promise<void>}
- */
-export const createAdminUser = async () => {
+const initialSetup = async () => {
   try {
-    // Inicializa el repositorio de usuarios a través de TypeORM
-    const usuarioRepository = AppDataSource.getRepository(usuario);
+    console.log("Iniciando configuración inicial...");
 
-    // Verifica si ya existe un usuario 'admin'
-    const adminUser = await usuarioRepository.findOne({ where: { email: 'felipepd14@gmail.com' } });
+    await createAdminUser();
+    await seedEstados();
 
-    if (!adminUser) {
-      // Si el usuario 'admin' no existe, crea uno con un email y contraseña cifrada
-      const hashedPassword = await bcrypt.hash('admin123', 10);  // Cifra la contraseña
-
-      // Crea un nuevo usuario 'admin'
-      const nuevoAdmin = usuarioRepository.create({
-        nombre: 'Felipe',
-        email: 'felipepd14@gmail.com',
-        contraseña: hashedPassword,
-        rol: 'admin',
-      });
-
-      // Guarda el usuario en la base de datos
-      await usuarioRepository.save(nuevoAdmin);
-
-      console.log("Usuario 'admin' creado exitosamente.");
-    } else {
-      console.log("El usuario 'admin' ya existe.");
-    }
+    console.log("Configuración inicial completada.");
   } catch (error) {
-    console.error("Error creando usuario 'admin':", error);
+    console.error("Error en la configuración inicial:", error);
   }
 };
+
+export default initialSetup;
