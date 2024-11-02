@@ -61,7 +61,7 @@ const fardo = new EntitySchema({
       joinColumn: {
         name: 'categoria_id',
       },
-      nullable: false,
+      nullable: true,
       onDelete: 'SET NULL',
     },
     proveedor: {
@@ -70,7 +70,7 @@ const fardo = new EntitySchema({
       joinColumn: {
         name: 'proveedor_id',
       },
-      nullable: false,
+      nullable: true,
       onDelete: 'SET NULL',
     },
     prendas: {
