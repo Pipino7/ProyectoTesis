@@ -1,11 +1,10 @@
 import AppDataSource from '../config/ConfigDB.js';
 import Fardo from '../entities/fardo.js';
-import CategoriaService from './categoria.services.js';       
-import ProveedorService from './proveedor.services.js';     
+import CategoriaService from './categoria.services.js';
+import ProveedorService from './proveedor.services.js';
 import helpers from './helpers.services.js';
-import categoriaSchema from '../schema/categoria.schema.js';  
-import proveedorSchema from '../schema/proveedor.schema.js';  
-import fardoSchema from '../schema/fardo.schema.js';          
+import Estado from '../entities/estado.js';  
+import Prenda from '../entities/prenda.js';  
 
 const { generateCodigoFardo, generateUniqueBarcode } = helpers;
 
@@ -16,80 +15,60 @@ const FardoService = {
     await queryRunner.startTransaction();
 
     try {
-      // Extraer los campos de categoría y proveedor antes de validar con fardoSchema
       const { nombre_categoria, nombre_proveedor, ...datosFardoSinCategoriaYProveedor } = datosFardo;
 
-      // Validar los campos propios del fardo usando fardoSchema
-      const { error: fardoError, value: fardoValidado } = fardoSchema.validate(datosFardoSinCategoriaYProveedor, { abortEarly: false });
-      if (fardoError) {
-        const mensajes = fardoError.details.map(detail => detail.message);
-        throw new Error(`Error en la validación de fardo: ${mensajes.join(', ')}`);
-      }
-
-      // Validar la categoría usando categoriaSchema
-      const { error: categoriaError, value: categoriaValidada } = categoriaSchema.validate({ nombre_categoria });
-      if (categoriaError) {
-        const mensajes = categoriaError.details.map(detail => detail.message);
-        throw new Error(`Error en la validación de la categoría: ${mensajes.join(', ')}`);
-      }
-
-      // Validar el proveedor usando proveedorSchema
-      const { error: proveedorError, value: proveedorValidado } = proveedorSchema.validate({ nombre_proveedor });
-      if (proveedorError) {
-        const mensajes = proveedorError.details.map(detail => detail.message);
-        throw new Error(`Error en la validación del proveedor: ${mensajes.join(', ')}`);
-      }
-
       // Obtener o crear la categoría
-      let categoriaObtenida = await CategoriaService.obtenerCategoria(categoriaValidada.nombre_categoria, queryRunner);
+      let categoriaObtenida = await CategoriaService.obtenerCategoria(nombre_categoria, queryRunner);
       if (!categoriaObtenida) {
-        categoriaObtenida = await CategoriaService.crearCategoria({ nombre_categoria: categoriaValidada.nombre_categoria }, queryRunner);
-      }
-
-      // Verificar que la categoría obtenida tiene un ID válido
-      if (!categoriaObtenida || !categoriaObtenida.id) {
-        throw new Error('Error al obtener o crear la categoría: ID no encontrado');
+        categoriaObtenida = await CategoriaService.crearCategoria({ nombre_categoria }, queryRunner);
       }
 
       // Obtener o crear el proveedor
-      let proveedorObtenido = await ProveedorService.obtenerProveedor(proveedorValidado.nombre_proveedor, queryRunner);
+      let proveedorObtenido = await ProveedorService.obtenerProveedor(nombre_proveedor, queryRunner);
       if (!proveedorObtenido) {
-        proveedorObtenido = await ProveedorService.crearProveedor({ nombre_proveedor: proveedorValidado.nombre_proveedor }, queryRunner);
+        proveedorObtenido = await ProveedorService.crearProveedor({ nombre_proveedor }, queryRunner);
       }
 
-      // Verificar que el proveedor obtenido tiene un ID válido
-      if (!proveedorObtenido || !proveedorObtenido.id) {
-        throw new Error('Error al obtener o crear el proveedor: ID no encontrado');
+      // Obtener o crear el estado "bodega" solo una vez al inicio
+      let estadoBodega = await queryRunner.manager.findOne(Estado, { where: { nombre_estado: 'bodega' } });
+      if (!estadoBodega) {
+        estadoBodega = queryRunner.manager.create(Estado, { nombre_estado: 'bodega' });
+        estadoBodega = await queryRunner.manager.save(Estado, estadoBodega);
+        console.log('Estado "bodega" creado automáticamente.');
       }
 
-      // Añadir logs de depuración
-      console.log('Categoria Obtenida:', categoriaObtenida);
-      console.log('Proveedor Obtenido:', proveedorObtenido);
-
-      // Generar código de fardo y código de barras
+      
       const codigo_fardo = await generateCodigoFardo();
       const codigo_barra_fardos = await generateUniqueBarcode();
 
-      // Crear el fardo asignando las entidades completas
       const nuevoFardo = queryRunner.manager.create(Fardo, {
-        categoria: categoriaObtenida,        
-        proveedor: proveedorObtenido,        
-        fecha_adquisicion: fardoValidado.fecha_adquisicion,
-        costo_fardo: fardoValidado.costo_fardo,
-        cantidad_prendas: fardoValidado.cantidad_prendas,
-        costo_unitario_por_prenda: parseFloat((fardoValidado.costo_fardo / fardoValidado.cantidad_prendas).toFixed(2)),
+        categoria: categoriaObtenida,
+        proveedor: proveedorObtenido,
+        fecha_adquisicion: datosFardoSinCategoriaYProveedor.fecha_adquisicion,
+        costo_fardo: datosFardoSinCategoriaYProveedor.costo_fardo,
+        cantidad_prendas: datosFardoSinCategoriaYProveedor.cantidad_prendas,
+        costo_unitario_por_prenda: parseFloat((datosFardoSinCategoriaYProveedor.costo_fardo / datosFardoSinCategoriaYProveedor.cantidad_prendas).toFixed(2)),
         codigo_fardo,
         codigo_barra_fardos,
-        perdidas: 0, 
+        perdidas: 0,
         status: 'activo',
       });
 
       // Guardar el fardo
       const fardoGuardado = await queryRunner.manager.save(Fardo, nuevoFardo);
 
-      // Commit de la transacción
-      await queryRunner.commitTransaction();
+      // Crear la prenda asociada al fardo
+      const nuevaPrenda = {
+        fardo: fardoGuardado,
+        codigo_barra_prenda: null,  
+        precio: null,               
+        estado: estadoBodega,       
+        cantidad: datosFardoSinCategoriaYProveedor.cantidad_prendas,
+      };
 
+      await queryRunner.manager.save(Prenda, nuevaPrenda);
+
+      await queryRunner.commitTransaction();
       return fardoGuardado;
 
     } catch (error) {
@@ -100,18 +79,13 @@ const FardoService = {
       await queryRunner.release();
     }
   },
-  /**
-   * Elimina un fardo de manera lógica si no tiene ventas asociadas.
-   * @param {string} codigo_fardo - Código único del fardo a eliminar.
-   * @returns {Promise<Object>} - Fardo eliminado.
-   */
+
   eliminarFardo: async (codigo_fardo) => {
     try {
-      const fardoRepository = AppDataSource.getRepository(fardoEntity);
+      const fardoRepository = AppDataSource.getRepository(Fardo);
 
-      // Encontrar el fardo por su código
       const fardoAEliminar = await fardoRepository.findOne({
-        where: { codigo_fardo: codigo_fardo, status: 'activo' },
+        where: { codigo_fardo, status: 'activo' },
         relations: ['prendas'],
       });
 
@@ -136,25 +110,19 @@ const FardoService = {
     }
   },
 
-  /**
-   * Restaura un fardo eliminado.
-   * @param {string} codigo_fardo - Código único del fardo a restaurar.
-   * @returns {Promise<Object>} - Fardo restaurado.
-   */
   restaurarFardo: async (codigo_fardo) => {
     try {
-      const fardoRepository = AppDataSource.getRepository(fardoEntity);
+      const fardoRepository = AppDataSource.getRepository(Fardo);
 
-      // Encontrar el fardo eliminado por su código
       const fardoArestaurar = await fardoRepository.findOne({
-        where: { codigo_fardo: codigo_fardo, status: 'eliminado' },
+        where: { codigo_fardo, status: 'eliminado' },
       });
 
       if (!fardoArestaurar) {
         throw new Error('Fardo no encontrado o no está eliminado.');
       }
 
-      // Restaurar el estado del fardo
+      
       fardoArestaurar.status = 'activo';
       await fardoRepository.save(fardoArestaurar);
 
@@ -165,17 +133,12 @@ const FardoService = {
     }
   },
 
-  /**
-   * Obtiene un fardo por su código único.
-   * @param {string} codigo_fardo - Código único del fardo.
-   * @returns {Promise<Object>} - Fardo encontrado.
-   */
   getFardoByCodigo: async (codigo_fardo) => {
     try {
-      const fardoRepository = AppDataSource.getRepository(fardoEntity);
+      const fardoRepository = AppDataSource.getRepository(Fardo);
 
       const fardoEncontrado = await fardoRepository.findOne({
-        where: { codigo_fardo: codigo_fardo, status: 'activo' },
+        where: { codigo_fardo, status: 'activo' },
         relations: ['categoria', 'proveedor'],
       });
 
@@ -190,13 +153,9 @@ const FardoService = {
     }
   },
 
-  /**
-   * Obtiene todos los fardos activos.
-   * @returns {Promise<Array>} - Lista de fardos.
-   */
   getAllFardos: async () => {
     try {
-      const fardoRepository = AppDataSource.getRepository(fardoEntity);
+      const fardoRepository = AppDataSource.getRepository(Fardo);
 
       const fardos = await fardoRepository.find({
         where: { status: 'activo' },
@@ -210,27 +169,9 @@ const FardoService = {
     }
   },
 
-  /**
-   * Verifica si un fardo tiene ventas asociadas.
-   * @param {number} fardoId - ID del fardo.
-   * @returns {Promise<boolean>} - True si tiene ventas, false en caso contrario.
-   */
   verificarVentas: async (fardoId) => {
     try {
-      // Placeholder: Retorna false ya que el servicio de ventas aún no está implementado
       return false;
-
-      // Una vez implementado el servicio de ventas, actualiza esta función:
-      /*
-      const ventas = await AppDataSource.getRepository('venta')
-        .createQueryBuilder('venta')
-        .innerJoin('venta.detallesVenta', 'detalleVenta')
-        .innerJoin('detalleVenta.prenda', 'prenda')
-        .where('prenda.fardo_id = :fardoId', { fardoId })
-        .getCount();
-
-      return ventas > 0;
-      */
     } catch (error) {
       console.error('Error verificando ventas del fardo:', error);
       throw new Error('No se pudo verificar las ventas del fardo.');
