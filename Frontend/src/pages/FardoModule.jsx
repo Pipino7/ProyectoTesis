@@ -13,7 +13,7 @@ const FardosModule = () => {
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [proveedor, setProveedor] = useState('');
-  const [precio, setPrecio] = useState([0, 1000000]); // Ajuste de precio con máximo de 1.000.000
+  const [precio, setPrecio] = useState([0, 1000000]); 
   const [orden, setOrden] = useState('');
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const fardosListRef = useRef();
