@@ -2,8 +2,8 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Login from '../components/Login';
-import Dashboard from '../components/Dashboard';
-import FardoModule from '../components/FardoModule';  // Importamos el FardosModule
+import Dashboard from '../pages/Dashboard';
+import FardoModule from "../pages/FardoModule";
 import PrivateRoute from '../guards/PrivateRoutes';
 
 const AppRoutes = () => {
