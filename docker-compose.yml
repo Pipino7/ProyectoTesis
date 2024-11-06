@@ -1,0 +1,30 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3200:3200"
+    env_file:
+      - ./backend/src/config/.env
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"       
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:13.10
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pipino
+      POSTGRES_DB: isamoda
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
