@@ -2,7 +2,8 @@
 import express from 'express';
 import authControllers from '../controllers/auth.controllers.js';
 import { loginSchema, passwordResetRequestSchema, passwordResetSchema } from '../schema/auth.schema.js';
-import validationMiddleware from '../middlewares/validation.middleware.js';
+import validationMiddleware from '../middlewares/validationMiddleware.js';
+
 const router = express.Router();
 
 // Ruta para iniciar sesión (login) con validación

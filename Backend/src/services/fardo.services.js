@@ -133,25 +133,6 @@ const FardoService = {
     }
   },
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< Updated upstream
-  /**
-   * Obtiene un fardo por su código único.
-   * @param {string} codigo_fardo - Código único del fardo.
-   * @returns {Promise<Object>} - Fardo encontrado.
-   */
->>>>>>> Stashed changes
-  getFardoByCodigo: async (codigo_fardo) => {
-    try {
-      const fardoRepository = AppDataSource.getRepository(Fardo);
-
-      const fardoEncontrado = await fardoRepository.findOne({
-        where: { codigo_fardo, status: 'activo' },
-        relations: ['categoria', 'proveedor'],
-      });
-
-=======
   getFardoByCodigo: async ({ codigo_fardo, codigo_barra }) => {
     try {
       const fardoRepository = AppDataSource.getRepository(Fardo);
@@ -173,7 +154,6 @@ const FardoService = {
         throw new Error('Debe proporcionar un código de fardo o un código de barra para buscar.');
       }
   
->>>>>>> Stashed changes
       if (!fardoEncontrado) {
         throw new Error('Fardo no encontrado.');
       }
@@ -184,20 +164,10 @@ const FardoService = {
       throw error;
     }
   },
-<<<<<<< Updated upstream
 
-  getAllFardos: async () => {
-    try {
-<<<<<<< Updated upstream
-      const fardoRepository = AppDataSource.getRepository(Fardo);
-=======
-      const fardoRepository = AppDataSource.getRepository(fardoEntity);
-=======
   getAllFardos: async ({ page = 1, limit = 15, orden = 'desc', proveedor, categoria, precioMin, precioMax, fechaInicio, fechaFin }) => {
     try {
         const fardoRepository = AppDataSource.getRepository(Fardo);
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 
         // Convierte precioMin y precioMax a números válidos o ignóralos si son NaN
         precioMin = isNaN(precioMin) ? undefined : precioMin;
@@ -258,6 +228,7 @@ const FardoService = {
         throw error;
     }
 },
+
   
 
   verificarVentas: async (fardoId) => {
