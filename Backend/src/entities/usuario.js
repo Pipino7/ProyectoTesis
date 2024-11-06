@@ -25,7 +25,7 @@ const usuario = new EntitySchema({
       length: 255,
       nullable: false,
     },
-    rol: {
+    rol_usuario: {
       type: 'varchar',
       length: 50,
       nullable: false,
