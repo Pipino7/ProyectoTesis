@@ -1,7 +1,10 @@
 "use strict";
 
-import { autenticarUsuario, generarTokenReset, resetPassword } from '../services/auth.services.js';  // Importamos los servicios de autenticación
-import { respondSuccess, respondError } from '../utils/resHandler.js';  // Importamos manejo de respuestas
+import authServices from '../services/auth.services.js';
+import { respondSuccess, respondError } from '../utils/resHandler.js';
+
+// Extraer funciones del servicio de autenticación
+const { autenticarUsuario, generarTokenReset, resetPassword } = authServices;
 
 // Controlador para iniciar sesión (login)
 const login = async (req, res) => {
@@ -10,7 +13,7 @@ const login = async (req, res) => {
     const { token, usuario } = await autenticarUsuario({ email, password });
     return respondSuccess(req, res, 200, { token, usuario });
   } catch (error) {
-    return respondError(req, res, 400, error.message);  // Error en el login
+    return respondError(req, res, 400, error.message);
   }
 };
 
@@ -18,7 +21,7 @@ const login = async (req, res) => {
 const solicitarResetPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const resetToken = await generarTokenReset(email);  // Generar el token de restablecimiento
+    const resetToken = await generarTokenReset(email);
     return respondSuccess(req, res, 200, { message: "Se ha enviado un correo con instrucciones para restablecer la contraseña.", resetToken });
   } catch (error) {
     console.error("Error en generarTokenReset:", error);
@@ -30,16 +33,15 @@ const solicitarResetPassword = async (req, res) => {
 const restablecerPassword = async (req, res) => {
   try {
     const { token, nuevaPassword } = req.body;
-    await resetPassword(token, nuevaPassword);  // Restablecer la contraseña
+    await resetPassword(token, nuevaPassword);
     return respondSuccess(req, res, 200, { message: "Contraseña restablecida exitosamente." });
   } catch (error) {
-    return respondError(req, res, 400, error.message);  // Error al restablecer la contraseña
+    return respondError(req, res, 400, error.message);
   }
 };
 
 // Controlador para cerrar sesión (logout)
 const logout = (req, res) => {
-  // En JWT, cerrar sesión es simplemente eliminar el token del lado del cliente
   return respondSuccess(req, res, 200, { message: "Sesión cerrada exitosamente." });
 };
 

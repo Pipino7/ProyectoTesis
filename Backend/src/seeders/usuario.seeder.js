@@ -15,7 +15,7 @@ const createAdminUser = async () => {
         nombre: 'Felipe',
         email: 'felipepd14@gmail.com',
         contraseña: hashedPassword,
-        rol: 'admin',
+        rol_usuario: 'admin',
       });
 
       await usuarioRepository.save(nuevoAdmin);

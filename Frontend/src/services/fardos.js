@@ -1,49 +1,71 @@
-import api from './api';
+import api from './api'; // Asegúrate de que la ruta sea correcta
+const fardoService = {
+  obtenerFardos: async (filtros = {}) => {
+    try {
+      // Crear objeto de parámetros sin valores nulos
+      const params = {};
+      if (filtros.fechaInicio) params.fechaInicio = filtros.fechaInicio;
+      if (filtros.fechaFin) params.fechaFin = filtros.fechaFin;
+      if (filtros.proveedor) params.proveedor = filtros.proveedor;
+      if (filtros.categoria) params.categoria = filtros.categoria;
+      if (filtros.precioMin) params.precioMin = filtros.precioMin;
+      if (filtros.precioMax) params.precioMax = filtros.precioMax;
+      params.orden = filtros.orden || 'desc';
+      params.page = filtros.page || 1;
+      params.limit = filtros.limit || 15;
 
-// Obtener fardos paginados
-export const obtenerFardos = async (page = 1, limit = 20) => {
-  const response = await api.get(`api/fardos/paginados?page=${page}&limit=${limit}`);
-  return response.data;
-};
-
-// Crear un nuevo fardo
-export const crearFardo = async (datosFardo) => {
-  const response = await api.post('api/fardos/crear', datosFardo);
-  return response.data;
-};
-
-// Eliminar un fardo por su código
-export const eliminarFardo = async (codigo_fardo) => {
-  const response = await api.delete(`api/fardos/${codigo_fardo}`);
-  return response.data;
-};
-
-// Obtener un fardo por su código
-export const obtenerFardoPorCodigo = async (codigo_fardo) => {
-  const response = await api.get(`/api/fardos/${codigo_fardo}`);
-  return response.data;
-};
-
-// Obtener las categorías de prendas asociadas a un fardo
-export const obtenerCategoriasDePrendas = async (fardoId) => {
-  const response = await api.get(`/fardos/${fardoId}/categorias`);
-  return response.data;
-};
-
-
-export const obtenerFardosConFiltros = async (filtros) => {
-  const response = await api.get('api/fardos/Filtro', {
-    params: {
-      fechaInicio: filtros.fechaInicio,
-      fechaFin: filtros.fechaFin,
-      nombre_proveedor: filtros.proveedor, // Cambia el nombre a 'nombre_proveedor' en los parámetros
-      precio_min: filtros.precioMin,
-      precio_max: filtros.precioMax,
-      orden_fecha: filtros.orden, // Aquí cambiamos a `orden_fecha` para que coincida con la URL
-      page: filtros.page,
-      limit: filtros.limit
+      const response = await api.get('/api/fardos/obtener', { params });
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener fardos:", error);
+      throw error;
     }
-  });
-  return response.data;
+  },
+
+  // Crear un nuevo fardo
+  crearFardo: async (datosFardo) => {
+    try {
+      const response = await api.post('api/fardos/crear', datosFardo);
+      return response.data;
+    } catch (error) {
+      console.error("Error al crear fardo:", error);
+      throw error;
+    }
+  },
+
+  // Eliminar un fardo por su código
+  eliminarFardo: async (codigo_fardo) => {
+    try {
+      const response = await api.delete(`api/fardos/${codigo_fardo}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error al eliminar fardo:", error);
+      throw error;
+    }
+  },
+
+  // Restaurar un fardo eliminado
+  restaurarFardo: async (codigo_fardo) => {
+    try {
+      const response = await api.post(`api/fardos/${codigo_fardo}/restaurar`);
+      return response.data;
+    } catch (error) {
+      console.error("Error al restaurar fardo:", error);
+      throw error;
+    }
+  },
+
+  // Obtener un fardo por su código
+  obtenerFardoPorCodigo: async (codigo_fardo) => {
+    try {
+      const response = await api.get(`api/fardos/${codigo_fardo}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener fardo por código:", error);
+      throw error;
+    }
+  },
 };
 
+// Exportación predeterminada del servicio
+export default fardoService;

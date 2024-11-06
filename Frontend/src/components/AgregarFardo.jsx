@@ -3,8 +3,7 @@
 import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { fardoSchema } from '../validation/fardoSchema';
-import { crearFardo } from '../services/fardos';
+import fardoService from '../services/fardos'; 
 
 const AgregarFardo = ({ onClose, onFardoAgregado }) => {
   const {
@@ -34,7 +33,6 @@ const AgregarFardo = ({ onClose, onFardoAgregado }) => {
   const [datosResumen, setDatosResumen] = useState(null);
 
   const onSubmit = (data) => {
-    // Validar que la suma de cantidades en precios coincida con cantidad_prendas
     const totalPrendasPrecios = data.precios.reduce(
       (acc, curr) => acc + parseInt(curr.cantidad || 0, 10),
       0
@@ -46,7 +44,6 @@ const AgregarFardo = ({ onClose, onFardoAgregado }) => {
       return;
     }
 
-    // Guardar los datos para el resumen y cambiar el estado para mostrar el resumen
     setDatosResumen(data);
     setMostrarResumen(true);
   };
@@ -55,18 +52,15 @@ const AgregarFardo = ({ onClose, onFardoAgregado }) => {
     const data = datosResumen;
 
     try {
-      const response = await crearFardo(data);
+      const response = await fardoService.crearFardo(data); // Usa fardoService para llamar a crearFardo
 
       alert('Fardo agregado exitosamente.');
 
-      // Limpiar el formulario y restablecer el estado
       reset();
       setMostrarResumen(false);
 
-      // Notificar al componente padre que se ha agregado un nuevo fardo
       onFardoAgregado(response.codigo_fardo);
 
-      // Cerrar el modal
       onClose();
     } catch (error) {
       console.error(error);
@@ -75,70 +69,42 @@ const AgregarFardo = ({ onClose, onFardoAgregado }) => {
   };
 
   const cancelarResumen = () => {
-    // Volver al formulario
     setMostrarResumen(false);
   };
 
   return (
     <div>
       {mostrarResumen ? (
-        // Mostrar el resumen de datos
         <div>
           <h2 className="text-2xl font-semibold mb-4">Resumen de Datos</h2>
           {datosResumen && (
             <div>
-              <p>
-                <strong>Tipo de Prenda:</strong> {datosResumen.tipo_prenda}
-              </p>
-              <p>
-                <strong>Fecha de Adquisición:</strong>{' '}
-                {new Date(datosResumen.fecha_adquisicion).toLocaleDateString()}
-              </p>
-              <p>
-                <strong>Nombre del Proveedor:</strong> {datosResumen.nombre_proveedor}
-              </p>
-              <p>
-                <strong>Costo del Fardo:</strong> ${datosResumen.costo_fardo}
-              </p>
-              <p>
-                <strong>Cantidad de Prendas:</strong> {datosResumen.cantidad_prendas}
-              </p>
-              <p>
-                <strong>Detalles de Precios:</strong>
-              </p>
+              <p><strong>Tipo de Prenda:</strong> {datosResumen.tipo_prenda}</p>
+              <p><strong>Fecha de Adquisición:</strong> {new Date(datosResumen.fecha_adquisicion).toLocaleDateString()}</p>
+              <p><strong>Nombre del Proveedor:</strong> {datosResumen.nombre_proveedor}</p>
+              <p><strong>Costo del Fardo:</strong> ${datosResumen.costo_fardo}</p>
+              <p><strong>Cantidad de Prendas:</strong> {datosResumen.cantidad_prendas}</p>
+              <p><strong>Detalles de Precios:</strong></p>
               <ul className="list-disc list-inside">
                 {datosResumen.precios.map((precio, index) => (
-                  <li key={index}>
-                    {precio.cantidad} prendas a ${precio.precio} cada una
-                  </li>
+                  <li key={index}>{precio.cantidad} prendas a ${precio.precio} cada una</li>
                 ))}
               </ul>
             </div>
           )}
-
           <div className="flex justify-end mt-4">
-            <button
-              type="button"
-              onClick={cancelarResumen}
-              className="bg-gray-300 text-gray-700 px-4 py-2 rounded mr-2 hover:bg-gray-400 transition duration-200"
-            >
+            <button type="button" onClick={cancelarResumen} className="bg-gray-300 text-gray-700 px-4 py-2 rounded mr-2 hover:bg-gray-400 transition duration-200">
               Editar
             </button>
-            <button
-              type="button"
-              onClick={confirmarAgregarFardo}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-200"
-            >
+            <button type="button" onClick={confirmarAgregarFardo} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-200">
               Confirmar y Agregar Fardo
             </button>
           </div>
         </div>
       ) : (
-        // Mostrar el formulario
         <div>
           <h2 className="text-2xl font-semibold mb-4">Agregar Fardo</h2>
           <form onSubmit={handleSubmit(onSubmit)}>
-            {/* Campos del formulario */}
             <div className="mb-4">
               <label className="block text-gray-700">Tipo de Prenda</label>
               <input
@@ -214,7 +180,6 @@ const AgregarFardo = ({ onClose, onFardoAgregado }) => {
               )}
             </div>
 
-            {/* Sección para ingresar los precios y cantidades */}
             <div className="mb-4">
               <label className="block text-gray-700 mb-2">Detalles de Precios</label>
               {fields.map((item, index) => (
@@ -261,7 +226,6 @@ const AgregarFardo = ({ onClose, onFardoAgregado }) => {
               </button>
             </div>
 
-            {/* Botones de acción */}
             <div className="flex justify-end mt-4">
               <button
                 type="button"

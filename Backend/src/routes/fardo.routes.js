@@ -1,4 +1,3 @@
-// src/routes/fardo.routes.js
 import express from 'express';
 import FardoController from '../controllers/fardo.controllers.js';
 
@@ -13,7 +12,7 @@ router.delete('/fardos/:codigo_fardo', FardoController.eliminarFardoController);
 // Ruta para restaurar un fardo eliminado
 router.post('/fardos/:codigo_fardo/restaurar', FardoController.restaurarFardoController);
 
-// Ruta para obtener un fardo por su código
+// Ruta para obtener un fardo por su código o código de barra
 router.get('/fardos/:codigo_fardo', FardoController.obtenerFardoPorCodigoController);
 
 // Ruta para obtener todos los fardos

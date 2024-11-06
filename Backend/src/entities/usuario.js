@@ -1,8 +1,9 @@
+// src/entities/usuario.js
 import { EntitySchema } from 'typeorm';
 
 const usuario = new EntitySchema({
-  name: 'usuario',
-  tableName: 'usuario',
+  name: 'usuario',  // Nombre de la entidad
+  tableName: 'usuario',  // Nombre de la tabla en la base de datos
   columns: {
     id: {
       primary: true,
@@ -25,13 +26,19 @@ const usuario = new EntitySchema({
       length: 255,
       nullable: false,
     },
-    rol: {
+    rol_usuario: {
       type: 'varchar',
       length: 50,
       nullable: false,
     },
-  },
-  relations: {
+    reset_token: {
+      type: 'varchar',
+      nullable: true,
+    },
+    reset_token_expires: {
+      type: 'timestamp',
+      nullable: true,
+    },
   },
 });
 
