@@ -133,6 +133,15 @@ const FardoService = {
     }
   },
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+  /**
+   * Obtiene un fardo por su código único.
+   * @param {string} codigo_fardo - Código único del fardo.
+   * @returns {Promise<Object>} - Fardo encontrado.
+   */
+>>>>>>> Stashed changes
   getFardoByCodigo: async (codigo_fardo) => {
     try {
       const fardoRepository = AppDataSource.getRepository(Fardo);
@@ -142,32 +151,114 @@ const FardoService = {
         relations: ['categoria', 'proveedor'],
       });
 
+=======
+  getFardoByCodigo: async ({ codigo_fardo, codigo_barra }) => {
+    try {
+      const fardoRepository = AppDataSource.getRepository(Fardo);
+  
+      let fardoEncontrado;
+  
+      // Buscar por código de fardo o código de barra, según cuál esté disponible
+      if (codigo_fardo) {
+        fardoEncontrado = await fardoRepository.findOne({
+          where: { codigo_fardo, status: 'activo' },
+          relations: ['categoria', 'proveedor'],
+        });
+      } else if (codigo_barra) {
+        fardoEncontrado = await fardoRepository.findOne({
+          where: { codigo_barra, status: 'activo' },
+          relations: ['categoria', 'proveedor'],
+        });
+      } else {
+        throw new Error('Debe proporcionar un código de fardo o un código de barra para buscar.');
+      }
+  
+>>>>>>> Stashed changes
       if (!fardoEncontrado) {
         throw new Error('Fardo no encontrado.');
       }
-
+  
       return fardoEncontrado;
     } catch (error) {
       console.error('Error obteniendo fardo:', error);
       throw error;
     }
   },
+<<<<<<< Updated upstream
 
   getAllFardos: async () => {
     try {
+<<<<<<< Updated upstream
       const fardoRepository = AppDataSource.getRepository(Fardo);
+=======
+      const fardoRepository = AppDataSource.getRepository(fardoEntity);
+=======
+  getAllFardos: async ({ page = 1, limit = 15, orden = 'desc', proveedor, categoria, precioMin, precioMax, fechaInicio, fechaFin }) => {
+    try {
+        const fardoRepository = AppDataSource.getRepository(Fardo);
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 
-      const fardos = await fardoRepository.find({
-        where: { status: 'activo' },
-        relations: ['categoria', 'proveedor'],
-      });
+        // Convierte precioMin y precioMax a números válidos o ignóralos si son NaN
+        precioMin = isNaN(precioMin) ? undefined : precioMin;
+        precioMax = isNaN(precioMax) ? undefined : precioMax;
 
-      return fardos;
+        console.log("Parámetros recibidos en getAllFardos (post-validación):", {
+            page,
+            limit,
+            orden,
+            proveedor,
+            categoria,
+            precioMin,
+            precioMax,
+            fechaInicio,
+            fechaFin,
+        });
+
+        // Construcción de la consulta (igual que antes)
+        const query = fardoRepository.createQueryBuilder('fardo')
+            .where('fardo.status = :status', { status: 'activo' })
+            .leftJoinAndSelect('fardo.categoria', 'categoria')
+            .leftJoinAndSelect('fardo.proveedor', 'proveedor');
+
+        // Filtro por proveedor
+        if (proveedor) query.andWhere('LOWER(proveedor.nombre_proveedor) = LOWER(:proveedor)', { proveedor });
+        if (categoria) query.andWhere('LOWER(categoria.nombre_categoria) = LOWER(:categoria)', { categoria });
+
+        // Filtro por rango de precios
+        if (precioMin !== undefined || precioMax !== undefined) {
+            if (precioMin !== undefined && precioMax !== undefined) {
+                query.andWhere('fardo.costo_fardo BETWEEN :precioMin AND :precioMax', { precioMin, precioMax });
+            } else if (precioMin !== undefined) {
+                query.andWhere('fardo.costo_fardo >= :precioMin', { precioMin });
+            } else if (precioMax !== undefined) {
+                query.andWhere('fardo.costo_fardo <= :precioMax', { precioMax });
+            }
+        }
+
+        // Filtro por rango de fechas
+        if (fechaInicio && fechaFin) {
+            query.andWhere('fardo.fecha_adquisicion BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin });
+        }
+
+        query.orderBy('fardo.fecha_adquisicion', orden.toUpperCase()).skip((page - 1) * limit).take(limit);
+
+        console.log("Consulta SQL generada:", query.getSql());
+
+        const [fardos, total] = await query.getManyAndCount();
+        console.log("Resultados obtenidos: ", fardos.length, "fardos encontrados, total de páginas:", Math.ceil(total / limit));
+
+        return {
+            fardos,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page,
+        };
     } catch (error) {
-      console.error('Error obteniendo fardos:', error);
-      throw error;
+        console.error('Error obteniendo fardos:', error);
+        throw error;
     }
-  },
+},
+  
 
   verificarVentas: async (fardoId) => {
     try {

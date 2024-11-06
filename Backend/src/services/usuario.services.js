@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import AppDataSource from '../config/configDB.js';  // Asegúrate de tener AppDataSource exportado
+import AppDataSource from '../config/ConfigDB.js';  // Asegúrate de tener AppDataSource exportado
 import  Usuario  from '../entities/usuario.js';  
 import { userRegisterSchema } from '../schema/usuario.schema.js';  // Importa los esquemas de validación Joi
 import { v4 as uuidv4 } from 'uuid';  // Importa uuidv4 para generar identificadores únicos

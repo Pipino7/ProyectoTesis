@@ -45,7 +45,7 @@ const restaurarFardoController = async (req, res) => {
 const obtenerFardoPorCodigoController = async (req, res) => {
   try {
     const { codigo_fardo } = req.params;
-    const fardo = await FardoService.getFardoByCodigo(codigo_fardo);
+    const fardo = await FardoService.getFardoByCodigo({ codigo_fardo, codigo_barra: req.query.codigo_barra });
     res.status(200).json(fardo);
   } catch (error) {
     res.status(404).json({ error: error.message });
@@ -53,16 +53,55 @@ const obtenerFardoPorCodigoController = async (req, res) => {
 };
 
 /**
- * Controlador para obtener todos los fardos.
+ * Controlador para obtener todos los fardos con paginación y filtros.
  */
 const obtenerTodosFardosController = async (req, res) => {
   try {
-    const fardos = await FardoService.getAllFardos();
+    const {
+      page = 1,
+      limit = 15,
+      orden = 'desc',
+      proveedor,
+      categoria,
+      precioMin,
+      precioMax,
+      fechaInicio,
+      fechaFin
+    } = req.query;
+
+    // Agrega un log para verificar los valores de los filtros recibidos
+    console.log("Parámetros recibidos en el controlador:", {
+      page,
+      limit,
+      orden,
+      proveedor,
+      categoria,
+      precioMin,
+      precioMax,
+      fechaInicio,
+      fechaFin,
+    });
+
+    const fardos = await FardoService.getAllFardos({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      orden,
+      proveedor,
+      categoria,
+      precioMin: parseFloat(precioMin),
+      precioMax: parseFloat(precioMax),
+      fechaInicio,
+      fechaFin,
+    });
+
     res.status(200).json(fardos);
   } catch (error) {
+    console.error("Error en obtenerTodosFardosController:", error);
     res.status(400).json({ error: error.message });
   }
 };
+
+
 
 export default {
   crearFardoController,

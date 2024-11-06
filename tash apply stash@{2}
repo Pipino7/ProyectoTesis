@@ -1,0 +1,16 @@
+ Backend/Dockerfile                           |  17 [32m+[m[31m---[m
+ Backend/package.json                         |   6 [32m+[m[31m-[m
+ Backend/src/controllers/auth.controllers.js  |  16 [32m++[m[31m--[m
+ Backend/src/controllers/fardo.controllers.js |  45 [32m++++++++[m[31m-[m
+ Backend/src/entities/usuario.js              |  17 [32m+++[m[31m-[m
+ Backend/src/routes/auth.routes.js            |  27 [32m+++[m[31m---[m
+ Backend/src/routes/fardo.routes.js           |   9 [32m+[m[31m-[m
+ Backend/src/schema/auth.schema.js            |  28 [32m+++++[m[31m-[m
+ Backend/src/server.js                        |   2 [31m-[m
+ Backend/src/services/auth.services.js        | 101 [32m+++++++[m[31m-------------[m
+ Backend/src/services/fardo.services.js       | 101 [32m+++++++++++++++++[m[31m---[m
+ Backend/src/services/usuario.services.js     |   2 [32m+[m[31m-[m
+ Frontend/.gitignore                          |   1 [31m-[m
+ Frontend/src/pages/FardoModule.jsx           | 135 [32m+++++++++++++++++++++++++++[m
+ Frontend/src/routes/AppRoutes.jsx            |   2 [32m+[m[31m-[m
+ 15 files changed, 374 insertions(+), 135 deletions(-)
