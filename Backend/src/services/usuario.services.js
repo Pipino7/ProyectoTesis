@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import AppDataSource from '../config/ConfigDB.js';  // Asegúrate de tener AppDataSource exportado
 import  Usuario  from '../entities/usuario.js';  
 import { userRegisterSchema } from '../schema/usuario.schema.js';  // Importa los esquemas de validación Joi
