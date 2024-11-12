@@ -7,7 +7,7 @@ const router = express.Router();
 router.post('/crear', FardoController.crearFardoController);
 
 // Ruta para eliminar un fardo
-router.delete('/fardos/:codigo_fardo', FardoController.eliminarFardoController);
+router.delete('/:codigo_fardo', FardoController.eliminarFardoController);
 
 // Ruta para restaurar un fardo eliminado
 router.post('/fardos/:codigo_fardo/restaurar', FardoController.restaurarFardoController);
