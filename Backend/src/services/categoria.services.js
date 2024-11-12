@@ -3,39 +3,43 @@
 import categoriaSchema from '../schema/categoria.schema.js';
 import Categoria from '../entities/categoria.js';
 import { ILike } from 'typeorm';
+import AppDataSource from '../config/ConfigDB.js';
 
-// Función para estandarizar el nombre de la categoría
 const estandarizarNombre = (nombre) => {
   return nombre.trim().replace(/\s+/g, ' ').toLowerCase();
 };
 
-// Función para crear una categoría
-const crearCategoria = async (datosCategoria, queryRunner) => {
+const crearCategoria = async (datosCategoria) => {
   try {
     // Validar los datos de la categoría con Joi
     const { error, value } = categoriaSchema.validate(datosCategoria);
     if (error) {
-      throw new Error(`Error en la validación: ${error.details.map(detail => detail.message).join(', ')}`);
+      throw new Error(
+        `Error en la validación: ${error.details
+          .map((detail) => detail.message)
+          .join(', ')}`
+      );
     }
 
     const nombreEstandarizado = estandarizarNombre(value.nombre_categoria);
 
-    // Verificar si la categoría ya existe (insensible a mayúsculas)
-    const categoriaExistente = await queryRunner.manager.findOne(Categoria, {
-      where: { nombre_categoria: ILike(nombreEstandarizado) }
+    const categoriaRepository = AppDataSource.getRepository(Categoria);
+
+    // Verificar si la categoría ya existe
+    const categoriaExistente = await categoriaRepository.findOne({
+      where: { nombre_categoria: ILike(nombreEstandarizado) },
     });
 
     if (categoriaExistente) {
       throw new Error('La categoría ya existe.');
     }
 
-    // Crear una nueva instancia de la entidad categoría
-    const nuevaCategoria = queryRunner.manager.create(Categoria, {
+    // Crear y guardar la nueva categoría
+    const nuevaCategoria = categoriaRepository.create({
       nombre_categoria: nombreEstandarizado,
     });
 
-    // Guardar la categoría en la base de datos
-    const categoriaGuardada = await queryRunner.manager.save(Categoria, nuevaCategoria);
+    const categoriaGuardada = await categoriaRepository.save(nuevaCategoria);
 
     return categoriaGuardada;
   } catch (error) {
@@ -62,6 +66,20 @@ const obtenerCategoria = async (nombreCategoria, queryRunner) => {
   } catch (error) {
     console.error('Error en obtenerCategoria:', error);
     throw new Error('Error al obtener la categoría: ' + error.message);
+  }
+};
+const getAllCategorias = async () => {
+  try {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+    const categoriaRepository = AppDataSource.getRepository(Categoria);
+    const categorias = await categoriaRepository.find();
+    console.log("Categorías obtenidas:", categorias); // Verificar que se obtengan categorías
+    return categorias;
+  } catch (error) {
+    console.error('Error en getAllCategorias:', error);
+    throw new Error('Error al obtener las categorías: ' + error.message);
   }
 };
 
@@ -93,4 +111,5 @@ export default {
   crearCategoria,
   obtenerCategoria,
   eliminarCategoria,
+  getAllCategorias,
 };
