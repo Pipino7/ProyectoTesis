@@ -19,12 +19,20 @@ const crearFardoController = async (req, res) => {
 const eliminarFardoController = async (req, res) => {
   try {
     const { codigo_fardo } = req.params;
+    if (!codigo_fardo) {
+      throw new Error('El código del fardo no fue proporcionado.');
+    }
+    console.log('Código del fardo recibido para eliminación:', codigo_fardo);
+
     const fardoEliminado = await FardoService.eliminarFardo(codigo_fardo);
     res.status(200).json(fardoEliminado);
   } catch (error) {
+    console.error('Error al eliminar fardo:', error);
     res.status(400).json({ error: error.message });
   }
 };
+
+
 
 /**
  * Controlador para restaurar un fardo eliminado.
@@ -69,18 +77,6 @@ const obtenerTodosFardosController = async (req, res) => {
       fechaFin
     } = req.query;
 
-    // Agrega un log para verificar los valores de los filtros recibidos
-    console.log("Parámetros recibidos en el controlador:", {
-      page,
-      limit,
-      orden,
-      proveedor,
-      categoria,
-      precioMin,
-      precioMax,
-      fechaInicio,
-      fechaFin,
-    });
 
     const fardos = await FardoService.getAllFardos({
       page: parseInt(page),
