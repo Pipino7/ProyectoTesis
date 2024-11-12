@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import AppDataSource from '../config/ConfigDB.js';
 import usuario from '../entities/usuario.js';  // Asegúrate de que el nombre sea consistente
 import dotenv from 'dotenv';
