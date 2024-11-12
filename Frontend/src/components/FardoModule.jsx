@@ -114,12 +114,6 @@ const FardosModule = () => {
               <button onClick={() => setMostrarAgregar(true)} className="bg-indigo-600 text-white px-6 py-3 rounded-lg">Agregar Fardo</button>
             </div>
 
-            {codigoFardoReciente && (
-              <div className="mb-6">
-                <button onClick={imprimirCodigoBarras} className="bg-teal-500 text-white px-6 py-3 rounded-lg">Imprimir Código de Barras del Fardo Reciente</button>
-              </div>
-            )}
-
             <FardosList ref={fardosListRef} fechaInicio={fechaInicio} fechaFin={fechaFin} proveedor={proveedor} precioMin={precio[0]} precioMax={precio[1]} orden={orden} />
           </div>
 
