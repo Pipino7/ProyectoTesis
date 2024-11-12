@@ -19,7 +19,7 @@ const InputField = ({
       <input
         type={type}
         value={value}
-        onChange={onChange}c
+        onChange={onChange}
         placeholder={placeholder}
         className={`w-full p-2 pl-10 border rounded focus:outline-none focus:ring-2 focus:ring-purple-600 ${
           error ? 'border-red-500' : 'border-gray-300'
