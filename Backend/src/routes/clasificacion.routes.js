@@ -2,7 +2,7 @@
 import express from 'express';
 import ClasificacionController from '../controllers/clasificacion.controller.js';
 import validationMiddleware from '../middlewares/validationMiddleware.js';
-import clasificacionSchema from '../schema/clasificacion.schema.js';
+import clasificacionSchema from '../schema/clasificacion.Schema.js';
 
 const router = express.Router();
 
