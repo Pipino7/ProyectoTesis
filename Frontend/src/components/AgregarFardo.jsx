@@ -1,66 +1,73 @@
-// src/components/AgregarFardo.jsx
-
-import React, { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import fardoService from '../services/fardos'; 
+import fardoSchema from '../Validation/fardoSchema';
+import categoriaService from '../services/Categoria.services';
+import fardoService from '../services/fardos.js';
 
 const AgregarFardo = ({ onClose, onFardoAgregado }) => {
+  const [categorias, setCategorias] = useState([]);
+  const [isEditingCategoria, setIsEditingCategoria] = useState(false);
+  const [nuevaCategoria, setNuevaCategoria] = useState('');
+  const [mostrarResumen, setMostrarResumen] = useState(false);
+  const [datosResumen, setDatosResumen] = useState(null);
+
   const {
     register,
-    control,
     handleSubmit,
+    setValue,
     formState: { errors },
     reset,
   } = useForm({
     resolver: yupResolver(fardoSchema),
     defaultValues: {
-      tipo_prenda: '',
       fecha_adquisicion: '',
       nombre_proveedor: '',
       costo_fardo: '',
       cantidad_prendas: '',
-      precios: [{ cantidad: '', precio: '' }],
+      nombre_categoria: '',
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'precios',
-  });
-
-  const [mostrarResumen, setMostrarResumen] = useState(false);
-  const [datosResumen, setDatosResumen] = useState(null);
+  useEffect(() => {
+    const cargarCategorias = async () => {
+      try {
+        const categoriasObtenidas = await categoriaService.obtenerCategorias();
+        setCategorias(categoriasObtenidas);
+      } catch (error) {
+        console.error('Error al cargar categorías:', error);
+      }
+    };
+    cargarCategorias();
+  }, []);
 
   const onSubmit = (data) => {
-    const totalPrendasPrecios = data.precios.reduce(
-      (acc, curr) => acc + parseInt(curr.cantidad || 0, 10),
-      0
-    );
-    if (totalPrendasPrecios !== parseInt(data.cantidad_prendas, 10)) {
-      alert(
-        'La suma de las cantidades por precio debe coincidir con la cantidad total de prendas.'
-      );
-      return;
-    }
-
-    setDatosResumen(data);
+    setDatosResumen({ ...data, nuevaCategoria });
     setMostrarResumen(true);
   };
 
   const confirmarAgregarFardo = async () => {
     const data = datosResumen;
 
+    // Si hay una nueva categoría, envíala al backend
+    if (nuevaCategoria) {
+      try {
+        const categoriaCreada = await categoriaService.crearCategoria(nuevaCategoria);
+        data.nombre_categoria = categoriaCreada.nombre_categoria; // Actualiza con el valor creado
+        setNuevaCategoria('');
+      } catch (error) {
+        console.error('Error al crear nueva categoría:', error);
+        alert('Error al agregar la nueva categoría. Intenta nuevamente.');
+        return;
+      }
+    }
+
     try {
-      const response = await fardoService.crearFardo(data); // Usa fardoService para llamar a crearFardo
-
+      const response = await fardoService.crearFardo(data);
       alert('Fardo agregado exitosamente.');
-
       reset();
       setMostrarResumen(false);
-
       onFardoAgregado(response.codigo_fardo);
-
       onClose();
     } catch (error) {
       console.error(error);
@@ -68,181 +75,135 @@ const AgregarFardo = ({ onClose, onFardoAgregado }) => {
     }
   };
 
-  const cancelarResumen = () => {
-    setMostrarResumen(false);
-  };
-
   return (
-    <div>
+    <div className="p-6 bg-white rounded-lg shadow-md">
       {mostrarResumen ? (
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Resumen de Datos</h2>
-          {datosResumen && (
-            <div>
-              <p><strong>Tipo de Prenda:</strong> {datosResumen.tipo_prenda}</p>
-              <p><strong>Fecha de Adquisición:</strong> {new Date(datosResumen.fecha_adquisicion).toLocaleDateString()}</p>
-              <p><strong>Nombre del Proveedor:</strong> {datosResumen.nombre_proveedor}</p>
-              <p><strong>Costo del Fardo:</strong> ${datosResumen.costo_fardo}</p>
-              <p><strong>Cantidad de Prendas:</strong> {datosResumen.cantidad_prendas}</p>
-              <p><strong>Detalles de Precios:</strong></p>
-              <ul className="list-disc list-inside">
-                {datosResumen.precios.map((precio, index) => (
-                  <li key={index}>{precio.cantidad} prendas a ${precio.precio} cada una</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <h2 className="text-2xl font-bold mb-4">Resumen de Datos</h2>
+          <p><strong>Fecha de Adquisición:</strong> {new Date(datosResumen.fecha_adquisicion).toLocaleDateString()}</p>
+          <p><strong>Proveedor:</strong> {datosResumen.nombre_proveedor}</p>
+          <p><strong>Costo del Fardo:</strong> ${datosResumen.costo_fardo}</p>
+          <p><strong>Cantidad de Prendas:</strong> {datosResumen.cantidad_prendas}</p>
+          <p><strong>Categoría:</strong> {datosResumen.nombre_categoria || nuevaCategoria}</p>
           <div className="flex justify-end mt-4">
-            <button type="button" onClick={cancelarResumen} className="bg-gray-300 text-gray-700 px-4 py-2 rounded mr-2 hover:bg-gray-400 transition duration-200">
+            <button
+              onClick={() => setMostrarResumen(false)}
+              className="bg-gray-500 text-white px-4 py-2 rounded mr-2 hover:bg-gray-600 transition duration-200"
+            >
               Editar
             </button>
-            <button type="button" onClick={confirmarAgregarFardo} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-200">
-              Confirmar y Agregar Fardo
+            <button
+              onClick={confirmarAgregarFardo}
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-200"
+            >
+              Confirmar y Agregar
             </button>
           </div>
         </div>
       ) : (
-        <div>
-          <h2 className="text-2xl font-semibold mb-4">Agregar Fardo</h2>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="mb-4">
-              <label className="block text-gray-700">Tipo de Prenda</label>
-              <input
-                {...register('tipo_prenda')}
-                className={`w-full p-2 border rounded ${
-                  errors.tipo_prenda ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.tipo_prenda && (
-                <p className="text-red-500 text-sm mt-1">{errors.tipo_prenda.message}</p>
-              )}
-            </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <label className="block text-gray-700">Fecha de Adquisición</label>
+            <input
+              type="date"
+              {...register('fecha_adquisicion')}
+              className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"
+            />
+            {errors.fecha_adquisicion && <p className="text-red-500 text-sm">{errors.fecha_adquisicion.message}</p>}
+          </div>
 
-            <div className="mb-4">
-              <label className="block text-gray-700">Fecha de Adquisición</label>
-              <input
-                type="date"
-                {...register('fecha_adquisicion')}
-                className={`w-full p-2 border rounded ${
-                  errors.fecha_adquisicion ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.fecha_adquisicion && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.fecha_adquisicion.message}
-                </p>
-              )}
-            </div>
+          <div>
+            <label className="block text-gray-700">Proveedor</label>
+            <input
+              {...register('nombre_proveedor')}
+              placeholder="Proveedor"
+              className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"
+            />
+            {errors.nombre_proveedor && <p className="text-red-500 text-sm">{errors.nombre_proveedor.message}</p>}
+          </div>
 
-            <div className="mb-4">
-              <label className="block text-gray-700">Nombre del Proveedor</label>
-              <input
-                {...register('nombre_proveedor')}
-                className={`w-full p-2 border rounded ${
-                  errors.nombre_proveedor ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.nombre_proveedor && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.nombre_proveedor.message}
-                </p>
-              )}
-            </div>
+          <div>
+            <label className="block text-gray-700">Costo del Fardo</label>
+            <input
+              type="number"
+              step="5000"
+              {...register('costo_fardo')}
+              placeholder="Costo del Fardo (incrementos de 5000)"
+              className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"
+            />
+            {errors.costo_fardo && <p className="text-red-500 text-sm">{errors.costo_fardo.message}</p>}
+          </div>
 
-            <div className="mb-4">
-              <label className="block text-gray-700">Costo del Fardo</label>
-              <input
-                type="number"
-                step="0.01"
-                {...register('costo_fardo')}
-                className={`w-full p-2 border rounded ${
-                  errors.costo_fardo ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.costo_fardo && (
-                <p className="text-red-500 text-sm mt-1">{errors.costo_fardo.message}</p>
-              )}
-            </div>
+          <div>
+            <label className="block text-gray-700">Cantidad de Prendas</label>
+            <input
+              type="number"
+              {...register('cantidad_prendas')}
+              placeholder="Cantidad de Prendas"
+              className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"
+            />
+            {errors.cantidad_prendas && <p className="text-red-500 text-sm">{errors.cantidad_prendas.message}</p>}
+          </div>
 
-            <div className="mb-4">
-              <label className="block text-gray-700">Cantidad de Prendas</label>
-              <input
-                type="number"
-                {...register('cantidad_prendas')}
-                className={`w-full p-2 border rounded ${
-                  errors.cantidad_prendas ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.cantidad_prendas && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.cantidad_prendas.message}
-                </p>
-              )}
-            </div>
+          <div>
+  <label className="block text-gray-700">Categoría</label>
+  {isEditingCategoria ? (
+    <input
+      type="text"
+      value={nuevaCategoria}
+      onChange={(e) => {
+        // Permitir solo letras
+        const regex = /^[a-zA-Z\s]*$/;
+        if (regex.test(e.target.value)) {
+          setNuevaCategoria(e.target.value);
+        }
+      }}
+      placeholder="Escribe la nueva categoría"
+      autoFocus // Habilita automáticamente el enfoque al seleccionar "Agregar nueva categoría"
+      className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"
+    />
+  ) : (
+    <select
+      {...register('nombre_categoria')}
+      className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"
+      onChange={(e) => {
+        if (e.target.value === 'agregar_nueva') {
+          setIsEditingCategoria(true);
+          setNuevaCategoria(''); // Limpia el campo para escribir
+        } else {
+          setValue('nombre_categoria', e.target.value);
+        }
+      }}
+    >
+      <option value="">Selecciona una categoría</option>
+      {categorias.map((cat) => (
+        <option key={cat.id} value={cat.nombre_categoria}>
+          {cat.nombre_categoria}
+        </option>
+      ))}
+      <option value="agregar_nueva">Agregar nueva categoría...</option>
+    </select>
+  )}
+  {errors.nombre_categoria && <p className="text-red-500 text-sm">{errors.nombre_categoria.message}</p>}
+</div>
 
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">Detalles de Precios</label>
-              {fields.map((item, index) => (
-                <div key={item.id} className="flex items-center mb-2">
-                  <input
-                    type="number"
-                    placeholder="Cantidad"
-                    {...register(`precios.${index}.cantidad`)}
-                    className={`w-1/2 p-2 border rounded mr-2 ${
-                      errors.precios?.[index]?.cantidad
-                        ? 'border-red-500'
-                        : 'border-gray-300'
-                    }`}
-                  />
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="Precio"
-                    {...register(`precios.${index}.precio`)}
-                    className={`w-1/2 p-2 border rounded mr-2 ${
-                      errors.precios?.[index]?.precio ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {fields.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 transition duration-200"
-                    >
-                      Eliminar
-                    </button>
-                  )}
-                </div>
-              ))}
-              {errors.precios && typeof errors.precios.message === 'string' && (
-                <p className="text-red-500 text-sm mt-1">{errors.precios.message}</p>
-              )}
-              <button
-                type="button"
-                onClick={() => append({ cantidad: '', precio: '' })}
-                className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800 transition duration-200 mt-2"
-              >
-                Agregar Otro Precio
-              </button>
-            </div>
 
-            <div className="flex justify-end mt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded mr-2 hover:bg-gray-400 transition duration-200"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition duration-200"
-              >
-                Revisar Datos
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="flex justify-end mt-4">
+            <button
+              type="submit"
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-200 mr-2"
+            >
+              Revisar Datos
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition duration-200"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
       )}
     </div>
   );
