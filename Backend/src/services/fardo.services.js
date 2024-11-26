@@ -39,7 +39,7 @@ const FardoService = {
 
       
       const codigo_fardo = await generateCodigoFardo();
-      const codigo_barra_fardos = await generateUniqueBarcode();
+      const codigo_barra_fardo = await generateUniqueBarcode();
 
       const nuevoFardo = queryRunner.manager.create(Fardo, {
         categoria: categoriaObtenida,
@@ -49,7 +49,7 @@ const FardoService = {
         cantidad_prendas: datosFardoSinCategoriaYProveedor.cantidad_prendas,
         costo_unitario_por_prenda: parseFloat((datosFardoSinCategoriaYProveedor.costo_fardo / datosFardoSinCategoriaYProveedor.cantidad_prendas).toFixed(2)),
         codigo_fardo,
-        codigo_barra_fardos,
+        codigo_barra_fardo,
         perdidas: 0,
         status: 'activo',
       });
