@@ -47,6 +47,49 @@ const ClasificacionController = {
         error: `No se pudo obtener el historial: ${error.message}`
       });
     }
+  },
+
+  obtenerPrendasClasificadas: async (req, res) => {
+    try {
+        const { codigo_fardo } = req.params;
+
+        // Llama al servicio para obtener las prendas clasificadas
+        const prendasClasificadas = await ClasificacionService.obtenerPrendasClasificadas(codigo_fardo);
+
+        // Calcula el total de prendas clasificadas
+        const totalPrendasClasificadas = prendasClasificadas.reduce(
+            (total, prenda) => total + prenda.cantidad,
+            0 // Valor inicial
+        );
+
+        return res.status(200).json({
+            message: `Prendas clasificadas para el fardo ${codigo_fardo}`,
+            data: prendasClasificadas,
+            totalPrendasClasificadas, // Incluye el total en la respuesta
+        });
+    } catch (error) {
+        console.error('Error en obtenerPrendasClasificadas:', error);
+        return res.status(500).json({
+            error: `No se pudo obtener las prendas clasificadas: ${error.message}`,
+        });
+    }
+},
+  
+
+  obtenerPrendasBodega: async (req, res) => {
+    try {
+      const { codigo } = req.params;
+      const prendasBodega = await ClasificacionService.obtenerPrendasBodega(codigo);
+      return res.status(200).json({
+        message: `Cantidad de prendas en bodega para el código ${codigo}`,
+        data: prendasBodega,
+      });
+    } catch (error) {
+      console.error('Error en obtenerPrendasBodega:', error);
+      return res.status(500).json({
+        error: `No se pudo obtener la cantidad de prendas en bodega: ${error.message}`
+      });
+    }
   }
 };
 
