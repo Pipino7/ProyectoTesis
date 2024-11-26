@@ -218,32 +218,40 @@ const ClasificacionService = {
     return await queryRunner.manager.findOne(Fardo, { where: { codigo_fardo } });
   },
 
-  _obtenerCantidadPrendasEnBodega: async (fardo_id, nombre_categoria, queryRunner) => {
-    const whereCondition = {
-      fardo: { id: fardo_id },
-      estado: { nombre_estado: 'bodega' }
-    };
 
-    if (nombre_categoria) {
-      whereCondition.categoria = { nombre_categoria };
+
+  obtenerPrendasClasificadas: async (codigo_fardo) => {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+  
+    try {
+      // Buscar el fardo por código
+      const fardo = await queryRunner.manager.findOne(Fardo, {
+        where: { codigo_fardo },
+      });
+      if (!fardo) throw new Error(`Fardo con código ${codigo_fardo} no encontrado.`);
+  
+      const prendasClasificadas = await queryRunner.manager.find(Prenda, {
+        relations: ['categoria', 'estado'], // Incluye relaciones necesarias
+        where: { fardo: { id: fardo.id }, estado: { nombre_estado: 'disponible' } },
+      });
+  
+      // Formatear las prendas clasificadas
+      const datosClasificados = prendasClasificadas.map((prenda) => ({
+        id: prenda.id,
+        codigo_barra_prenda: prenda.codigo_barra_prenda,
+        nombre_categoria: prenda.categoria.nombre_categoria,
+        precio: prenda.precio,
+        cantidad: prenda.cantidad,
+      }));
+  
+      return datosClasificados;
+    } catch (error) {
+      console.error('Error en obtenerPrendasClasificadas:', error);
+      throw new Error('Error al obtener prendas clasificadas: ' + error.message);
+    } finally {
+      await queryRunner.release();
     }
-
-    // Realiza la consulta con las relaciones necesarias
-    const prendasFiltradas = await queryRunner.manager.find(Prenda, {
-      relations: ['estado', 'fardo', 'categoria'],  
-      where: whereCondition,
-    });
-    console.log('Prendas en bodega con filtros ajustados:', prendasFiltradas);
-
-    return prendasFiltradas.reduce((total, prenda) => total + prenda.cantidad, 0);
-  },
-
-  _obtenerCantidadPrendasClasificadas: async (fardo_id, nombre_categoria, queryRunner) => {
-    const prendas = await queryRunner.manager.find(Prenda, {
-      where: { fardo: { id: fardo_id }, categoria: { nombre_categoria }, estado: { nombre_estado: 'disponible' } },
-
-    });
-    return prendas.reduce((total, prenda) => total + prenda.cantidad, 0);
   },
 
   _actualizarBodega: async (fardo_id, nombre_categoria, cantidad, queryRunner) => {
@@ -318,6 +326,41 @@ const ClasificacionService = {
     });
     await queryRunner.manager.save(HistorialClasificacion, nuevaClasificacion);
     console.log(`Clasificación registrada: ${accion}, cantidad clasificada: ${cantidad_clasificada}, cantidad restante: ${cantidad_restante_bodega}`);
+  },
+
+  obtenerPrendasBodega: async (codigo) => {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+  
+    try {
+      // Buscar el fardo por código de barra o código de fardo
+      const fardo = await queryRunner.manager.findOne(Fardo, {
+        where: [{ codigo_fardo: codigo }, { codigo_barra_fardo: codigo }],
+      });
+      if (!fardo) throw new Error(`Fardo con código ${codigo} no encontrado.`);
+  
+
+      const estadoBodega = await queryRunner.manager.findOne(Estado, {
+        where: { nombre_estado: 'bodega' },
+      });
+      if (!estadoBodega) throw new Error(`Estado 'bodega' no encontrado.`);
+  
+      // Obtener las prendas en estado 'bodega' para este fardo
+      const prendasEnBodega = await queryRunner.manager.find(Prenda, {
+        where: { fardo: { id: fardo.id }, estado: { id: estadoBodega.id } },
+      });
+  
+      // Calcular la cantidad total de prendas en bodega
+      const cantidadTotal = prendasEnBodega.reduce((total, prenda) => total + prenda.cantidad, 0);
+  
+      console.log(`Cantidad total de prendas en bodega para el fardo ${codigo}: ${cantidadTotal}`);
+      return { cantidadTotal };
+    } catch (error) {
+      console.error('Error en obtenerPrendasBodega:', error);
+      throw new Error('Error al obtener prendas en bodega: ' + error.message);
+    } finally {
+      await queryRunner.release();
+    }
   },
 };
 
