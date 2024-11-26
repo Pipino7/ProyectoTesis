@@ -23,4 +23,15 @@ router.get(
   ClasificacionController.obtenerHistorial
 );
 
+router.get(
+  '/prendas-bodega/:codigo',
+  ClasificacionController.obtenerPrendasBodega
+);
+
+router.get(
+  '/prendas-clasificadas/:codigo_fardo',
+  ClasificacionController.obtenerPrendasClasificadas
+);
+
+
 export default router;
