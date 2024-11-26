@@ -39,7 +39,7 @@ const generateUniqueBarcode = async () => {
     existeEnPrenda = await prendaRepository.findOne({ where: { codigo_barra_prenda: barcode } });
 
     
-    existeEnFardo = await fardoRepository.findOne({ where: { codigo_barra_fardos: barcode } });
+    existeEnFardo = await fardoRepository.findOne({ where: { codigo_barra_fardo: barcode } });
 
   } while (existeEnPrenda || existeEnFardo); 
 
