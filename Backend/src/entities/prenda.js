@@ -14,6 +14,10 @@ export const prenda = new EntitySchema({
       precision: 10,
       scale: 2,
       nullable: true,  
+      transformer: {
+        to: (value) => value, 
+        from: (value) => parseFloat(value) 
+      },
     },
     cantidad: {
       type: 'int',
