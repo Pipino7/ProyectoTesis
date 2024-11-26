@@ -36,7 +36,7 @@ const fardo = new EntitySchema({
       nullable: false,
       unique: true,  
     },
-    codigo_barra_fardos: {
+    codigo_barra_fardo: {
       type: 'varchar',
       length: 255,
       nullable: false,
