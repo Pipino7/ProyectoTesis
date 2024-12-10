@@ -1,30 +1,18 @@
+version: '3.8'
+
 services:
   backend:
     build: ./backend
     ports:
-      - "3200:3200"
+      - "${PORT}:${PORT}" # Usa la variable PORT definida en el archivo .env del backend
     env_file:
-      - ./backend/src/config/.env
-    depends_on:
-      - db
+      - ./backend/src/config/.env # Carga las variables desde el archivo .env
 
   frontend:
     build: ./frontend
     ports:
-      - "5173:80"       
+      - "${FRONTEND_PORT}:80" # Usa el puerto definido en el archivo .env del frontend
+    env_file:
+      - ./frontend/.env # Carga las variables desde el archivo .env
     depends_on:
       - backend
-
-  db:
-    image: postgres:13.10
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: pipino
-      POSTGRES_DB: isamoda
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
