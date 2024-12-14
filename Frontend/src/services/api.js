@@ -1,13 +1,13 @@
-// services/api.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3200'; // Eliminamos el '/api'
+
+const API_URL = import.meta.env.VITE_BASE_URL;
 
 const api = axios.create({
   baseURL: API_URL,
 });
 
-// Interceptor para añadir el token de autenticación si es necesario
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -20,3 +20,4 @@ api.interceptors.request.use(
 );
 
 export default api;
+
