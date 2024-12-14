@@ -1,14 +1,14 @@
-import api from './api';
+import axios from './api.js';
 
 const categoriaService = {
   obtenerCategorias: async () => {
-    const response = await api.get('/api/categorias/obtener');
-    return response.data;
+    const response = await axios.get('/categorias/obtener');
+    return response.data; // Retorna los datos de las categorías
   },
 
   crearCategoria: async (nombre_categoria) => {
-    const response = await api.post('/api/categorias/crear', { nombre_categoria });
-    return response.data;
+    const response = await axios.post('/categorias/crear', { nombre_categoria });
+    return response.data; // Retorna los datos de la categoría creada
   },
 };
 
