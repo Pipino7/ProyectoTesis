@@ -1,27 +1,25 @@
-import api from './api';
-
+import axios from './api.js';
 
 const clasificarPrendas = async (datosClasificacion) => {
-  return await api.post('/api/clasificacion/clasificar', datosClasificacion);
+ 
+  const response = await axios.post('/clasificacion/clasificar', datosClasificacion);
+  return response.data; 
 };
 
-
 const obtenerPrendasBodega = async (codigo) => {
-    const response = await api.get(`/api/clasificacion/prendas-bodega/${codigo}`);
-    return response.data; 
-  };
+  
+  const response = await axios.get(`/clasificacion/prendas-bodega/${codigo}`);
+  return response.data; 
+};
 
 const obtenerPrendasClasificadas = async (codigoFardo) => {
-    try {
-      const response = await api.get(`/api/clasificacion/prendas-clasificadas/${codigoFardo}`);
-      return response.data; // Devuelve los datos directamente
-    } catch (error) {
-      console.error('Error al obtener prendas clasificadas:', error);
-      throw error; // Lanza el error para manejarlo en el componente
-    }
-  };
+  
+  const response = await axios.get(`/clasificacion/prendas-clasificadas/${codigoFardo}`);
+  return response.data; 
+};
+
 export default {
   clasificarPrendas,
   obtenerPrendasBodega,
-  obtenerPrendasClasificadas, 
+  obtenerPrendasClasificadas,
 };
