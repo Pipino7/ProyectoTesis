@@ -580,11 +580,12 @@ sudo apt install git -y
    ```bash
    npm run build
    ```
-
+   - **Nota**: Tienes que estar dentro de la carpeta Frontend para ejecutar ese comando 
 5. **Iniciar el frontend con PM2:**
    ```bash
-   pm2 start npm -- run preview --name proyecto-frontend
+   pm2 start npm -- run preview 
    ```
+   - **Nota**: Tienes que estar dentro de la carpeta Frontend para ejecutar ese comando 
 
    Si ahora accedes al navegador y escribes `http://146.83.198.35:<PUERTO_4_DIGITOS>` (por ejemplo, `1631 que es el reflejo del 443`), deberías poder ver tu frontend funcionando correctamente.
 
