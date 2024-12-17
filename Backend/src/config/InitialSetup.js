@@ -1,5 +1,6 @@
 import createAdminUser from '../seeders/usuario.seeder.js';
 import seedEstados from '../seeders/estado.seeder.js';
+import seedFardos from '../seeders/Fardos.seeder.js';
 
 const initialSetup = async () => {
   try {
@@ -7,6 +8,7 @@ const initialSetup = async () => {
 
     await createAdminUser();
     await seedEstados();
+    await seedFardos();
 
     console.log("Configuración inicial completada.");
   } catch (error) {
