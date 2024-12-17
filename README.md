@@ -365,7 +365,8 @@ El archivo `.env` es crucial para definir las variables de entorno que utiliza e
    - **Correo electrónico:** felipepd14@gmail.com
    - **Contraseña:** admin123
 
-3. Nota: Actualmente, solo el módulo de fardos ha sido implementado en la aplicación. Puedes utilizar las credenciales proporcionadas para acceder y explorar esta funcionalidad.
+3. Nota: Actualmente, solo el módulo de fardos ha sido implementado en la aplicación. Puedes utilizar las credenciales proporcionadas para acceder y explorar esta funcionalidad. Despues de haber ejecutado las pruebas deten el docker "sudo docker-compose down"
+   
 
 ## **Despliegue Manual en un Servidor**
 
@@ -528,8 +529,10 @@ sudo apt install git -y
    ```
 2. **Iniciar el servidor con PM2:**
    ```bash
-   pm2 start src/index.js --name proyecto-backend
+   pm2 start src/server.js 
    ```
+   **Nota:** Tienes que estar dentro de la carpeta Backend "/ProyectoTesis/Backend$ pm2 start src/server.js"
+
 3. **Guardar la configuración de PM2 para reinicios automáticos:**
    ```bash
    pm2 save
@@ -547,16 +550,27 @@ sudo apt install git -y
    npm install
    ```
 
-3. **Añadir el archivo `.env`:**
+### **3. Añadir el archivo `.env`**
+
+1. **Crear y editar el archivo `.env`** en el directorio del **frontend**:
+
    ```bash
    nano .env
    ```
-   Agrega el siguiente contenido al archivo `.env`:
-   ```env
-   VITE_BASE_URL=http://*HOST:<PUERTO_4_DIGITOS>/api
+2. **Agregar la siguiente configuración al archivo `.env`:**:
+   ```bash
+   VITE_BASE_URL=http://<HOST>:<PUERTO_EXTERNO>/api
    ```
-   **Nota:** Reemplaza `<PUERTO_4_DIGITOS>` con el puerto configurado, por ejemplo, `3200` o `80` si es un puerto público.
-
+   > **Nota Importante:**  
+   > - Reemplaza `<HOST>` con la **dirección IP pública** del servidor donde está configurado el backend.  
+   > - Reemplaza `<PUERTO_EXTERNO>` con el **puerto configurado públicamente** en el servidor Apache.  
+   >
+   > **Ejemplo:**  
+   > Si la IP pública del servidor es `146.83.198.35` y el puerto público configurado es `8080`, entonces el archivo `.env` debe verse así:  
+   >
+   > ```env
+   > VITE_BASE_URL=http://146.83.198.35:8080/api
+   > ```
 4. **Construir el frontend:**
    ```bash
    npm run build
@@ -567,7 +581,7 @@ sudo apt install git -y
    pm2 start npm -- run preview --name proyecto-frontend
    ```
 
-   Si ahora accedes al navegador y escribes `http://146.83.198.35:<PUERTO_4_DIGITOS>` (por ejemplo, `443`), deberías poder ver tu frontend funcionando correctamente.
+   Si ahora accedes al navegador y escribes `http://146.83.198.35:<PUERTO_4_DIGITOS>` (por ejemplo, `1631 que es el reflejo del 443`), deberías poder ver tu frontend funcionando correctamente.
 
 6. **Guardar la configuración actual de PM2:**
    ```bash
