@@ -365,8 +365,13 @@ El archivo `.env` es crucial para definir las variables de entorno que utiliza e
    - **Correo electrónico:** felipepd14@gmail.com
    - **Contraseña:** admin123
 
-3. Nota: Actualmente, solo el módulo de fardos ha sido implementado en la aplicación. Puedes utilizar las credenciales proporcionadas para acceder y explorar esta funcionalidad. Despues de haber ejecutado las pruebas deten el docker "sudo docker-compose down"
-   
+3. Nota: Actualmente, solo el módulo de fardos ha sido implementado en la aplicación. Además, se han creado 3 fardos de prueba para testear y explorar la funcionalidad del módulo de fardos.
+Puedes utilizar las credenciales proporcionadas para acceder y realizar pruebas.
+
+Una vez finalizadas las pruebas, recuerda detener los contenedores de Docker con el siguiente comando:
+```bash
+sudo docker-compose down
+```   
 
 ## **Despliegue Manual en un Servidor**
 
