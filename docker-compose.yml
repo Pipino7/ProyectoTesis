@@ -1,3 +1,6 @@
+networks:
+  app-network:
+
 services:
   database:
     image: postgres:13
@@ -12,6 +15,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app-network
 
   backend:
     build: ./Backend
@@ -24,12 +29,16 @@ services:
       - ./Backend/src/config/.env
     environment:
       DB_URL: "postgresql://postgres:mysecretpassword@database:${POSTGRES_PORT:-5432}/isamoda_db"
+    networks:
+      - app-network
 
   frontend:
     build: ./Frontend
     ports:
-      - "5173:80"  
+      - "5173:80"
     env_file:
       - ./Frontend/.env
     depends_on:
       - backend
+    networks:
+      - app-network
