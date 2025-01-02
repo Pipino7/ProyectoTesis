@@ -48,12 +48,10 @@ const AgregarFardo = ({ onClose, onFardoAgregado }) => {
 
   const confirmarAgregarFardo = async () => {
     const data = datosResumen;
-
-    // Si hay una nueva categoría, envíala al backend
     if (nuevaCategoria) {
       try {
         const categoriaCreada = await categoriaService.crearCategoria(nuevaCategoria);
-        data.nombre_categoria = categoriaCreada.nombre_categoria; // Actualiza con el valor creado
+        data.nombre_categoria = categoriaCreada.nombre_categoria; 
         setNuevaCategoria('');
       } catch (error) {
         console.error('Error al crear nueva categoría:', error);
@@ -73,6 +71,12 @@ const AgregarFardo = ({ onClose, onFardoAgregado }) => {
       console.error(error);
       alert('Error al agregar el fardo. Verifica los datos ingresados.');
     }
+  };
+
+  const cancelarAgregarCategoria = () => {
+    setIsEditingCategoria(false);
+    setNuevaCategoria('');
+    setValue('nombre_categoria', '');
   };
 
   return (
@@ -146,47 +150,63 @@ const AgregarFardo = ({ onClose, onFardoAgregado }) => {
           </div>
 
           <div>
-  <label className="block text-gray-700">Categoría</label>
-  {isEditingCategoria ? (
-    <input
-      type="text"
-      value={nuevaCategoria}
-      onChange={(e) => {
-        // Permitir solo letras
-        const regex = /^[a-zA-Z\s]*$/;
-        if (regex.test(e.target.value)) {
-          setNuevaCategoria(e.target.value);
-        }
-      }}
-      placeholder="Escribe la nueva categoría"
-      autoFocus // Habilita automáticamente el enfoque al seleccionar "Agregar nueva categoría"
-      className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"
-    />
-  ) : (
-    <select
-      {...register('nombre_categoria')}
-      className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"
-      onChange={(e) => {
-        if (e.target.value === 'agregar_nueva') {
-          setIsEditingCategoria(true);
-          setNuevaCategoria(''); // Limpia el campo para escribir
-        } else {
-          setValue('nombre_categoria', e.target.value);
-        }
-      }}
-    >
-      <option value="">Selecciona una categoría</option>
-      {categorias.map((cat) => (
-        <option key={cat.id} value={cat.nombre_categoria}>
-          {cat.nombre_categoria}
-        </option>
-      ))}
-      <option value="agregar_nueva">Agregar nueva categoría...</option>
-    </select>
-  )}
-  {errors.nombre_categoria && <p className="text-red-500 text-sm">{errors.nombre_categoria.message}</p>}
-</div>
-
+            <label className="block text-gray-700">Categoría</label>
+            {isEditingCategoria ? (
+              <div>
+                <input
+                  type="text"
+                  value={nuevaCategoria}
+                  onChange={(e) => {
+                    const regex = /^[a-zA-Z\s]*$/;
+                    if (regex.test(e.target.value)) {
+                      setNuevaCategoria(e.target.value);
+                    }
+                  }}
+                  placeholder="Escribe la nueva categoría"
+                  autoFocus
+                  onBlur={() => {
+                    if (!nuevaCategoria.trim()) {
+                      cancelarAgregarCategoria();
+                    }
+                  }}
+                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"
+                  required
+                />
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    onClick={cancelarAgregarCategoria}
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-200"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <select
+                {...register('nombre_categoria')}
+                className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"
+                onChange={(e) => {
+                  if (e.target.value === 'agregar_nueva') {
+                    setIsEditingCategoria(true);
+                    setNuevaCategoria('');
+                  } else {
+                    setValue('nombre_categoria', e.target.value);
+                  }
+                }}
+                required
+              >
+                <option value="">Selecciona una categoría</option>
+                {categorias.map((cat) => (
+                  <option key={cat.id} value={cat.nombre_categoria}>
+                    {cat.nombre_categoria}
+                  </option>
+                ))}
+                <option value="agregar_nueva">Agregar nueva categoría...</option>
+              </select>
+            )}
+            {errors.nombre_categoria && <p className="text-red-500 text-sm">{errors.nombre_categoria.message}</p>}
+          </div>
 
           <div className="flex justify-end mt-4">
             <button
