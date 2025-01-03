@@ -1,9 +1,5 @@
-// src/controllers/fardo.controllers.js
 import FardoService from '../services/fardo.services.js';
 
-/**
- * Controlador para crear un nuevo fardo.
- */
 const crearFardoController = async (req, res) => {
   try {
     const fardoCreado = await FardoService.crearFardo(req.body);
@@ -13,9 +9,7 @@ const crearFardoController = async (req, res) => {
   }
 };
 
-/**
- * Controlador para eliminar un fardo.
- */
+
 const eliminarFardoController = async (req, res) => {
   try {
     const { codigo_fardo } = req.params;
@@ -34,9 +28,6 @@ const eliminarFardoController = async (req, res) => {
 
 
 
-/**
- * Controlador para restaurar un fardo eliminado.
- */
 const restaurarFardoController = async (req, res) => {
   try {
     const { codigo_fardo } = req.params;
@@ -47,9 +38,7 @@ const restaurarFardoController = async (req, res) => {
   }
 };
 
-/**
- * Controlador para obtener un fardo por su código.
- */
+
 const obtenerFardoPorCodigoController = async (req, res) => {
   try {
     const { codigo_fardo } = req.params;
@@ -60,9 +49,7 @@ const obtenerFardoPorCodigoController = async (req, res) => {
   }
 };
 
-/**
- * Controlador para obtener todos los fardos con paginación y filtros.
- */
+
 const obtenerTodosFardosController = async (req, res) => {
   try {
     const {
@@ -74,9 +61,9 @@ const obtenerTodosFardosController = async (req, res) => {
       precioMin,
       precioMax,
       fechaInicio,
-      fechaFin
+      fechaFin,
+      codigoFardo, 
     } = req.query;
-
 
     const fardos = await FardoService.getAllFardos({
       page: parseInt(page),
@@ -88,6 +75,7 @@ const obtenerTodosFardosController = async (req, res) => {
       precioMax: parseFloat(precioMax),
       fechaInicio,
       fechaFin,
+      codigoFardo, 
     });
 
     res.status(200).json(fardos);
