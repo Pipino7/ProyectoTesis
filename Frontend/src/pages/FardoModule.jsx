@@ -1,3 +1,5 @@
+// frontend/src/modules/FardosModule.jsx
+
 import React, { useState, useRef } from 'react';
 import FardosList from '../components/FardoList.jsx'; 
 import ReactModal from 'react-modal';
@@ -16,6 +18,7 @@ const FardosModule = () => {
   const [precio, setPrecio] = useState([0, 1000000]); 
   const [orden, setOrden] = useState('');
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [busquedaCodigo, setBusquedaCodigo] = useState(''); // Nuevo estado para búsqueda por código de fardo
   const fardosListRef = useRef();
 
   const cerrarModal = () => {
@@ -67,32 +70,59 @@ const FardosModule = () => {
   const handleOrdenChange = (e) => setOrden(e.target.value);
   const toggleFiltros = () => setMostrarFiltros(!mostrarFiltros);
 
+  // Manejo del cambio en el campo de búsqueda por código de fardo
+  const handleBusquedaCodigoChange = (e) => setBusquedaCodigo(e.target.value);
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen flex">
-      <div className={`fixed inset-y-0 left-0 bg-white shadow-lg p-6 transform ${mostrarFiltros ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
+      {/* Menú de Filtros Desplegable */}
+      <div className={`fixed inset-y-0 left-0 bg-white shadow-lg p-6 transform ${mostrarFiltros ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out z-50`}>
         <h2 className="text-2xl font-bold mb-4">Filtros</h2>
+        
+        {/* Campo de búsqueda por código de fardo */}
+        <div className="mb-4">
+          <label className="block text-gray-700">Buscar por Código de Fardo</label>
+          <input 
+            type="text" 
+            value={busquedaCodigo} 
+            onChange={handleBusquedaCodigoChange} 
+            placeholder="Ejemplo: A0001" 
+            className="mt-1 block w-full border border-gray-300 rounded-lg p-2" 
+          />
+        </div>
+
+        {/* Filtros Existentes */}
         <div className="mb-4">
           <label className="block text-gray-700">Fecha Inicio</label>
-          <input type="date" value={fechaInicio} onChange={handleFechaInicioChange} className="mt-1 block w-full" />
+          <input type="date" value={fechaInicio} onChange={handleFechaInicioChange} className="mt-1 block w-full border border-gray-300 rounded-lg p-2" />
         </div>
         <div className="mb-4">
           <label className="block text-gray-700">Fecha Fin</label>
-          <input type="date" value={fechaFin} onChange={handleFechaFinChange} className="mt-1 block w-full" />
+          <input type="date" value={fechaFin} onChange={handleFechaFinChange} className="mt-1 block w-full border border-gray-300 rounded-lg p-2" />
         </div>
         <div className="mb-4">
           <label className="block text-gray-700">Proveedor</label>
-          <input type="text" value={proveedor} onChange={handleProveedorChange} className="mt-1 block w-full" />
+          <input type="text" value={proveedor} onChange={handleProveedorChange} className="mt-1 block w-full border border-gray-300 rounded-lg p-2" />
         </div>
         <div className="mb-4">
           <label className="block text-gray-700">Precio</label>
-          <Slider range min={0} max={1000000} step={10000} value={precio} onChange={handlePrecioChange} />
+          <Slider 
+            range 
+            min={0} 
+            max={1000000} 
+            step={10000} 
+            value={precio} 
+            onChange={handlePrecioChange} 
+            className="mt-2"
+          />
           <div className="flex justify-between mt-2">
-            <span>${precio[0]}</span><span>${precio[1]}</span>
+            <span>${precio[0]}</span>
+            <span>${precio[1]}</span>
           </div>
         </div>
         <div className="mb-4">
           <label className="block text-gray-700">Orden</label>
-          <select value={orden} onChange={handleOrdenChange} className="mt-1 block w-full">
+          <select value={orden} onChange={handleOrdenChange} className="mt-1 block w-full border border-gray-300 rounded-lg p-2">
             <option value="">Seleccionar</option>
             <option value="asc">Ascendente</option>
             <option value="desc">Descendente</option>
@@ -101,6 +131,7 @@ const FardosModule = () => {
         <button onClick={toggleFiltros} className="bg-red-500 text-white px-4 py-2 rounded">Cerrar Filtros</button>
       </div>
 
+      {/* Contenido Principal */}
       <div className="flex-1 ml-6">
         <div className="max-w-7xl mx-auto">
           <div className="bg-white shadow-lg rounded-lg p-8 mb-8">
@@ -114,10 +145,25 @@ const FardosModule = () => {
               <button onClick={() => setMostrarAgregar(true)} className="bg-indigo-600 text-white px-6 py-3 rounded-lg">Agregar Fardo</button>
             </div>
 
-            <FardosList ref={fardosListRef} fechaInicio={fechaInicio} fechaFin={fechaFin} proveedor={proveedor} precioMin={precio[0]} precioMax={precio[1]} orden={orden} />
+            <FardosList 
+              ref={fardosListRef} 
+              fechaInicio={fechaInicio} 
+              fechaFin={fechaFin} 
+              proveedor={proveedor} 
+              precioMin={precio[0]} 
+              precioMax={precio[1]} 
+              orden={orden}
+              busquedaCodigo={busquedaCodigo} // Pasar el nuevo filtro como prop
+            />
           </div>
 
-          <ReactModal isOpen={mostrarAgregar} onRequestClose={cerrarModal} contentLabel="Agregar Fardo" overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center" className="bg-white rounded-lg overflow-auto max-h-full w-full max-w-2xl mx-auto p-8">
+          <ReactModal 
+            isOpen={mostrarAgregar} 
+            onRequestClose={cerrarModal} 
+            contentLabel="Agregar Fardo" 
+            overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center" 
+            className="bg-white rounded-lg overflow-auto max-h-full w-full max-w-2xl mx-auto p-8"
+          >
             <AgregarFardo onClose={cerrarModal} onFardoAgregado={handleFardoAgregado} />
           </ReactModal>
         </div>
