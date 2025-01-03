@@ -51,29 +51,19 @@ const ClasificacionController = {
 
   obtenerPrendasClasificadas: async (req, res) => {
     try {
-        const { codigo_fardo } = req.params;
-
-        // Llama al servicio para obtener las prendas clasificadas
-        const prendasClasificadas = await ClasificacionService.obtenerPrendasClasificadas(codigo_fardo);
-
-        // Calcula el total de prendas clasificadas
-        const totalPrendasClasificadas = prendasClasificadas.reduce(
-            (total, prenda) => total + prenda.cantidad,
-            0 // Valor inicial
-        );
-
-        return res.status(200).json({
-            message: `Prendas clasificadas para el fardo ${codigo_fardo}`,
-            data: prendasClasificadas,
-            totalPrendasClasificadas, // Incluye el total en la respuesta
-        });
+      const { codigo_fardo } = req.params;
+      const prendasClasificadas = await ClasificacionService.obtenerPrendasClasificadas(codigo_fardo);
+      return res.status(200).json({
+        message: `Prendas clasificadas para el fardo ${codigo_fardo}`,
+        data: prendasClasificadas.data,
+        totalPrendasClasificadas: prendasClasificadas.totalPrendasClasificadas,
+        totalPrendasDisponibles: prendasClasificadas.totalPrendasDisponibles,
+      });
     } catch (error) {
-        console.error('Error en obtenerPrendasClasificadas:', error);
-        return res.status(500).json({
-            error: `No se pudo obtener las prendas clasificadas: ${error.message}`,
-        });
+      return res.status(500).json({ error: error.message });
     }
-},
+  },
+  
   
 
   obtenerPrendasBodega: async (req, res) => {
