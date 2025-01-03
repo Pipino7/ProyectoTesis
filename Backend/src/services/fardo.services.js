@@ -1,10 +1,8 @@
 import AppDataSource from '../config/ConfigDB.js';
-import Fardo from '../entities/fardo.js';
 import CategoriaService from './categoria.services.js';
 import ProveedorService from './proveedor.services.js';
 import helpers from './helpers.services.js';
-import Estado from '../entities/estado.js';  
-import Prenda from '../entities/prenda.js';  
+import { Fardo, Estado, Prenda,} from '../entities/index.js';
 
 const { generateCodigoFardo, generateUniqueBarcode } = helpers;
 
@@ -165,11 +163,10 @@ const FardoService = {
     }
   },
 
-  getAllFardos: async ({ page = 1, limit = 15, orden = 'desc', proveedor, categoria, precioMin, precioMax, fechaInicio, fechaFin }) => {
+  getAllFardos: async ({ page = 1, limit = 15, orden = 'desc', proveedor, categoria, precioMin, precioMax, fechaInicio, fechaFin, codigoFardo }) => {
     try {
         const fardoRepository = AppDataSource.getRepository(Fardo);
 
-        // Convierte precioMin y precioMax a números válidos o ignóralos si son NaN
         precioMin = isNaN(precioMin) ? undefined : precioMin;
         precioMax = isNaN(precioMax) ? undefined : precioMax;
 
@@ -183,6 +180,7 @@ const FardoService = {
             precioMax,
             fechaInicio,
             fechaFin,
+            codigoFardo, // Añadido
         });
 
         // Construcción de la consulta (igual que antes)
@@ -192,8 +190,12 @@ const FardoService = {
             .leftJoinAndSelect('fardo.proveedor', 'proveedor');
 
         // Filtro por proveedor
-        if (proveedor) query.andWhere('LOWER(proveedor.nombre_proveedor) = LOWER(:proveedor)', { proveedor });
-        if (categoria) query.andWhere('LOWER(categoria.nombre_categoria) = LOWER(:categoria)', { categoria });
+        if (proveedor) {
+            query.andWhere('LOWER(proveedor.nombre_proveedor) = LOWER(:proveedor)', { proveedor });
+        }
+        if (categoria) {
+            query.andWhere('LOWER(categoria.nombre_categoria) = LOWER(:categoria)', { categoria });
+        }
 
         // Filtro por rango de precios
         if (precioMin !== undefined || precioMax !== undefined) {
@@ -211,7 +213,14 @@ const FardoService = {
             query.andWhere('fardo.fecha_adquisicion BETWEEN :fechaInicio AND :fechaFin', { fechaInicio, fechaFin });
         }
 
-        query.orderBy('fardo.fecha_adquisicion', orden.toUpperCase()).skip((page - 1) * limit).take(limit);
+        // Filtro por código de fardo (nuevo)
+        if (codigoFardo) {
+            query.andWhere('LOWER(fardo.codigo_fardo) LIKE LOWER(:codigoFardo)', { codigoFardo: `%${codigoFardo}%` });
+        }
+
+        query.orderBy('fardo.fecha_adquisicion', orden.toUpperCase())
+            .skip((page - 1) * limit)
+            .take(limit);
 
         console.log("Consulta SQL generada:", query.getSql());
 
@@ -228,6 +237,7 @@ const FardoService = {
         throw error;
     }
 },
+
 
   
 
