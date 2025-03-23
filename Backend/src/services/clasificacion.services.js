@@ -225,44 +225,49 @@ const ClasificacionService = {
   obtenerPrendasClasificadas: async (codigo_fardo) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
-  
+
     try {
-      const fardo = await queryRunner.manager.findOne(Fardo, { where: { codigo_fardo } });
-      if (!fardo) throw new Error(`Fardo con código ${codigo_fardo} no encontrado.`);
-  
-      const prendasClasificadas = await queryRunner.manager.find(Prenda, {
-        relations: ['estado', 'categoria'],
-        where: {
-          fardo: { id: fardo.id },
-          estado: { nombre_estado: In(['disponible', 'vendido']) }, // Incluir "disponible" y "vendido"
-        },
-      });
-  
-      const totalClasificadas = prendasClasificadas.reduce((total, prenda) => total + prenda.cantidad, 0);
-      const totalDisponibles = prendasClasificadas.reduce(
-        (total, prenda) => (prenda.estado.nombre_estado === 'disponible' ? total + prenda.cantidad : total),
-        0
-      );
-  
-      return {
-        data: prendasClasificadas.map((prenda) => ({
-          id: prenda.id,
-          codigo_barra_prenda: prenda.codigo_barra_prenda,
-          nombre_categoria: prenda.categoria?.nombre_categoria || 'Sin categoría',
-          precio: prenda.precio,
-          cantidad: prenda.cantidad,
-          estado: prenda.estado.nombre_estado,
-        })),
-        totalPrendasClasificadas: totalClasificadas,
-        totalPrendasDisponibles: totalDisponibles,
-      };
+        const fardo = await queryRunner.manager.findOne(Fardo, { where: { codigo_fardo } });
+        if (!fardo) throw new Error(`Fardo con código ${codigo_fardo} no encontrado.`);
+
+       
+        const historialClasificacion = await queryRunner.manager.find(HistorialClasificacion, {
+          where: { fardo: { id: fardo.id } },
+        });
+
+     
+        const cantidadClasificadaTotal = historialClasificacion.reduce((total, entry) => total + entry.cantidad_clasificada, 0);
+
+      
+        const prendasClasificadas = await queryRunner.manager.find(Prenda, {
+          relations: ['estado', 'categoria'],
+          where: {
+            fardo: { id: fardo.id },
+            estado: { nombre_estado: In(['disponible', 'vendido']) },
+          },
+        });
+
+        // Formatear la respuesta
+        const datosClasificados = prendasClasificadas.map(prenda => ({
+            id: prenda.id,
+            codigo_barra_prenda: prenda.codigo_barra_prenda,
+            nombre_categoria: prenda.categoria?.nombre_categoria || 'Sin categoría',
+            precio: prenda.precio,
+            cantidad_actual: prenda.cantidad,  
+        }));
+
+        return {
+            data: datosClasificados,
+            cantidadClasificadaTotal,  
+        };
     } catch (error) {
-      console.error('Error en obtenerPrendasClasificadas:', error);
-      throw new Error('Error al obtener prendas clasificadas: ' + error.message);
+        console.error('Error en obtenerPrendasClasificadas:', error);
+        throw new Error('Error al obtener prendas clasificadas: ' + error.message);
     } finally {
-      await queryRunner.release();
+        await queryRunner.release();
     }
-  },
+},
+
   
 
 

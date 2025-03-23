@@ -1,21 +1,41 @@
 import express from 'express';
 import FardoController from '../controllers/fardo.controllers.js';
+import validationMiddleware from '../middlewares/validationMiddleware.js';
+import fardoSchema from '../schema/fardo.schema.js';
+import { isAdmin } from '../middlewares/authorization.middleware.js'; // Importación corregida
+import authenticationMiddleware from '../middlewares/authentication.middleware.js';
 
 const router = express.Router();
 
-// Ruta para crear un nuevo fardo
-router.post('/crear', FardoController.crearFardoController);
+router.use(authenticationMiddleware);
 
-// Ruta para eliminar un fardo
-router.delete('/:codigo_fardo', FardoController.eliminarFardoController);
+router.post(
+  '/crear',
+  isAdmin,
+  validationMiddleware(fardoSchema),
+  FardoController.crearFardoController
+);
 
-// Ruta para restaurar un fardo eliminado
-router.post('/fardos/:codigo_fardo/restaurar', FardoController.restaurarFardoController);
+router.delete(
+  '/:codigo_fardo',
+  isAdmin,
+  FardoController.eliminarFardoController
+);
 
-// Ruta para obtener un fardo por su código o código de barra
-router.get('/fardos/:codigo_fardo', FardoController.obtenerFardoPorCodigoController);
+router.post(
+  '/fardos/:codigo_fardo/restaurar',
+  isAdmin,
+  FardoController.restaurarFardoController
+);
 
-// Ruta para obtener todos los fardos
-router.get('/obtener', FardoController.obtenerTodosFardosController);
+router.get(
+  '/fardos/:codigo_fardo',
+  FardoController.obtenerFardoPorCodigoController
+);
+
+router.get(
+  '/obtener',
+  FardoController.obtenerTodosFardosController
+);
 
 export default router;

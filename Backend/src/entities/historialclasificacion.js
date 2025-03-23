@@ -1,4 +1,3 @@
-// src/entities/historialClasificacion.js
 import { EntitySchema } from 'typeorm';
 
 const HistorialClasificacion = new EntitySchema({
@@ -16,10 +15,6 @@ const HistorialClasificacion = new EntitySchema({
       nullable: false,
     },
     cantidad_clasificada: {
-      type: 'int',
-      nullable: false,
-    },
-    cantidad_restante_bodega: {
       type: 'int',
       nullable: false,
     },
@@ -49,6 +44,14 @@ const HistorialClasificacion = new EntitySchema({
         name: 'usuario_id',
       },
       onDelete: 'CASCADE',
+    },
+    categoria: { 
+      type: 'many-to-one', 
+      target: 'categoria', 
+      joinColumn: { 
+        name: 'categoria_id', 
+      }, 
+      nullable: true, 
     },
   },
 });

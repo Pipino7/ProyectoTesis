@@ -113,11 +113,10 @@ const FardosList = forwardRef((props, ref) => {
         fardosCargados.map(async (fardo) => {
           try {
             const clasificadasResponse = await ClasificarService.obtenerPrendasClasificadas(fardo.codigo_fardo);
-            const totalClasificadas = clasificadasResponse?.data.reduce(
-              (total, prenda) => total + prenda.cantidad,
-              0 // Valor inicial
-            ) || 0;
-    
+            
+            // Tomar el total de clasificadas desde el historial en el backend
+            const totalClasificadas = clasificadasResponse?.cantidadClasificadaTotal || 0;
+            
             mapClasificaciones[fardo.codigo_fardo] = totalClasificadas;
           } catch (error) {
             console.error(`Error al cargar prendas clasificadas para el fardo ${fardo.codigo_fardo}:`, error);
@@ -125,6 +124,7 @@ const FardosList = forwardRef((props, ref) => {
           }
         })
       );
+      
       
       console.log('Final Map Clasificaciones:', mapClasificaciones);
       setPrendasClasificadasMap((prevMap) => ({

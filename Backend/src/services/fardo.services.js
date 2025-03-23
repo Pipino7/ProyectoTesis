@@ -27,7 +27,7 @@ const FardoService = {
         proveedorObtenido = await ProveedorService.crearProveedor({ nombre_proveedor }, queryRunner);
       }
 
-      // Obtener o crear el estado "bodega" solo una vez al inicio
+      
       let estadoBodega = await queryRunner.manager.findOne(Estado, { where: { nombre_estado: 'bodega' } });
       if (!estadoBodega) {
         estadoBodega = queryRunner.manager.create(Estado, { nombre_estado: 'bodega' });

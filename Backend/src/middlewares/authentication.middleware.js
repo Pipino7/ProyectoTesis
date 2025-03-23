@@ -7,25 +7,29 @@ const authenticationMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
 
     if (!authHeader?.startsWith("Bearer ")) {
-      return respondError(req, res, 401, "No autorizado. No hay token válido.");
+      return respondError(req, res, 401, "No tienes permisos para acceder a esta funcionalidad. Por favor, inicia sesión.");
     }
 
     const token = authHeader.split(" ")[1];
 
-    // Verificamos el token JWT
     jwt.verify(token, ACCESS_JWT_SECRET, (err, decoded) => {
-      if (err) return respondError(req, res, 403, "Token inválido o expirado.");
+      if (err) {
+        return respondError(
+          req, 
+          res, 
+          403, 
+          "No tienes permisos para esta funcionalidad. El token proporcionado es inválido o ha expirado."
+        );
+      }
 
-      req.userId = decoded.id;  // Guardamos el ID del usuario en la solicitud
-      req.email = decoded.email;  // Guardamos el email del usuario en la solicitud
-      
-      // Asegurarnos de que los roles estén en formato de array
-      req.roles = Array.isArray(decoded.roles) ? decoded.roles : [decoded.roles];  // Convertir a array si es string
+      req.userId = decoded.id; 
+      req.email = decoded.email;  
+      req.roles = Array.isArray(decoded.roles) ? decoded.roles : [decoded.roles];  
 
-      next();  // Continuamos con la siguiente función
+      next();  
     });
   } catch (error) {
-    return respondError(req, res, 500, "Error en la autenticación.");
+    return respondError(req, res, 500, "Ocurrió un error inesperado en la autenticación. Por favor, intenta nuevamente.");
   }
 };
 
