@@ -180,7 +180,7 @@ const FardoService = {
             precioMax,
             fechaInicio,
             fechaFin,
-            codigoFardo, // Añadido
+            codigoFardo,
         });
 
         // Construcción de la consulta (igual que antes)
@@ -191,8 +191,9 @@ const FardoService = {
 
         // Filtro por proveedor
         if (proveedor) {
-            query.andWhere('LOWER(proveedor.nombre_proveedor) = LOWER(:proveedor)', { proveedor });
+          query.andWhere('LOWER(proveedor.nombre_proveedor) LIKE LOWER(:proveedor)', { proveedor: `%${proveedor}%` });
         }
+        
         if (categoria) {
             query.andWhere('LOWER(categoria.nombre_categoria) = LOWER(:categoria)', { categoria });
         }
@@ -221,9 +222,6 @@ const FardoService = {
         query.orderBy('fardo.fecha_adquisicion', orden.toUpperCase())
             .skip((page - 1) * limit)
             .take(limit);
-
-        console.log("Consulta SQL generada:", query.getSql());
-
         const [fardos, total] = await query.getManyAndCount();
         console.log("Resultados obtenidos: ", fardos.length, "fardos encontrados, total de páginas:", Math.ceil(total / limit));
 
