@@ -6,6 +6,7 @@ const useLogout = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('rol');
     navigate('/login');
   };
 

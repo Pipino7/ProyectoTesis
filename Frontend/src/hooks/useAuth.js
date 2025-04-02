@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../services/auth';
+import { auth } from '@/services'; // ← aquí el cambio
 
 const useAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -14,10 +14,26 @@ const useAuth = () => {
     setLoading(true);
     
     try {
-      const response = await login(email, password);
-      localStorage.setItem('token', response.token);
-      navigate('/dashboard');
+      const response = await auth.login(email, password); // ← cambio aquí
+      console.log('🎯 Datos finales recibidos:', response);
+
+      const { token, usuario } = response.data;
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('rol', usuario.rol_usuario);
+
+      const rol = usuario.rol_usuario;
+
+      if (rol === 'admin') {
+        navigate('/dashboard');
+      } else if (rol === 'ventas') {
+        navigate('/pos');
+      } else {
+        navigate('/no-autorizado');
+      }
+
     } catch (error) {
+      console.error('❌ Error en login:', error);
       setError('Correo electrónico o contraseña incorrectos.');
       setShowResetLink(true);
     } finally {
