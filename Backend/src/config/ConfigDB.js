@@ -8,7 +8,7 @@ import proveedor from '../entities/proveedor.js';
 import usuario from '../entities/usuario.js';
 import cliente from '../entities/cliente.js';  
 import estado from '../entities/estado.js';  
-import HistorialClasificacion from '../entities/historialclasificacion.js';
+import movimiento_prenda from '../entities/movimientoPrenda.js';
 
 import { DB_URL } from './configEnv.js';
 
@@ -27,7 +27,7 @@ const AppDataSource = new DataSource({
     usuario,
     cliente,
     estado,
-    HistorialClasificacion
+    movimiento_prenda
     
   ],
   migrations: ['src/migrations/*.js'],  
