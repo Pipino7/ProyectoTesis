@@ -3,7 +3,7 @@ import Cliente from './cliente.js';
 import DetalleVenta from './detalle_venta.js';
 import Estado from './estado.js';
 import Fardo from './fardo.js';
-import HistorialClasificacion from './historialclasificacion.js';
+import movimiento_prenda from './movimientoPrenda.js';
 import Prenda from './prenda.js';
 import Proveedor from './proveedor.js';
 import Usuario from './usuario.js';
@@ -15,7 +15,7 @@ export {
   DetalleVenta,
   Estado,
   Fardo,
-  HistorialClasificacion,
+  movimiento_prenda,
   Prenda,
   Proveedor,
   Usuario,

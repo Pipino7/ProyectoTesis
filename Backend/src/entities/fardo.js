@@ -1,7 +1,10 @@
 // src/entities/fardo.js
 import { EntitySchema } from 'typeorm';
+import Categoria from './categoria.js';
+import Proveedor from './proveedor.js';
+import Prenda from './prenda.js';
 
-const fardo = new EntitySchema({
+const Fardo = new EntitySchema({
   name: 'fardo',
   tableName: 'fardo',
   columns: {
@@ -12,74 +15,70 @@ const fardo = new EntitySchema({
     },
     fecha_adquisicion: {
       type: 'date',
-      nullable: false,  
+      nullable: false,
     },
     costo_fardo: {
       type: 'decimal',
       precision: 10,
       scale: 2,
-      nullable: false,  
+      nullable: false,
     },
     cantidad_prendas: {
       type: 'int',
-      nullable: false,  
+      nullable: false,
     },
     costo_unitario_por_prenda: {
       type: 'decimal',
       precision: 10,
       scale: 2,
-      nullable: false,  
+      nullable: false,
     },
     codigo_fardo: {
       type: 'varchar',
       length: 255,
       nullable: false,
-      unique: true,  
+      unique: true,
     },
     codigo_barra_fardo: {
       type: 'varchar',
       length: 255,
       nullable: false,
-      unique: true,  
+      unique: true,
     },
     perdidas: {
       type: 'int',
-      nullable: true,  
-      default: 0,  
+      nullable: true,
+      default: 0,
     },
-    status: {  // Nuevo campo para manejar el estado del fardo
+    status: {
       type: 'varchar',
       length: 50,
       nullable: false,
-      default: 'activo', 
+      default: 'activo',
     },
   },
   relations: {
     categoria: {
       type: 'many-to-one',
-      target: 'categoria',
-      joinColumn: {
-        name: 'categoria_id',
-      },
+      target: Categoria, 
+      joinColumn: { name: 'categoria_id' },
       nullable: true,
       onDelete: 'SET NULL',
     },
     proveedor: {
       type: 'many-to-one',
-      target: 'proveedor',
-      joinColumn: {
-        name: 'proveedor_id',
-      },
+      target: Proveedor, 
+      joinColumn: { name: 'proveedor_id' },
       nullable: true,
       onDelete: 'SET NULL',
     },
     prendas: {
       type: 'one-to-many',
-      target: 'prenda',  
+      target: Prenda, 
       inverseSide: 'fardo',
-      cascade: true,  
+      cascade: true,
     },
   },
 });
 
-export default fardo;
+export default Fardo;

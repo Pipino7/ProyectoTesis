@@ -1,6 +1,7 @@
+// src/entities/categoria.js
 import { EntitySchema } from 'typeorm';
 
-export const categoria = new EntitySchema({
+const categoria = new EntitySchema({
   name: 'categoria',
   tableName: 'categoria',
   columns: {
