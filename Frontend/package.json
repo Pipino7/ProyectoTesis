@@ -7,11 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-   "preview": "vite preview --port=443"
+    "preview": "vite preview --port=443"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "axios": "^1.7.7",
+    "path": "^0.12.7",
     "prop-types": "^15.8.1",
     "rc-slider": "^11.1.6",
     "react": "^18.3.1",
