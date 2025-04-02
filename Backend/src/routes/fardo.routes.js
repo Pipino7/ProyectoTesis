@@ -1,30 +1,30 @@
+// src/routes/fardo.routes.js
 import express from 'express';
 import FardoController from '../controllers/fardo.controllers.js';
 import validationMiddleware from '../middlewares/validationMiddleware.js';
 import fardoSchema from '../schema/fardo.schema.js';
-import { isAdmin } from '../middlewares/authorization.middleware.js'; // Importación corregida
+import { allowRoles } from '../middlewares/authorization.middleware.js';
 import authenticationMiddleware from '../middlewares/authentication.middleware.js';
 
 const router = express.Router();
-
 router.use(authenticationMiddleware);
 
 router.post(
   '/crear',
-  isAdmin,
+  allowRoles('admin'),
   validationMiddleware(fardoSchema),
   FardoController.crearFardoController
 );
 
 router.delete(
   '/:codigo_fardo',
-  isAdmin,
+  allowRoles('admin'),
   FardoController.eliminarFardoController
 );
 
 router.post(
   '/fardos/:codigo_fardo/restaurar',
-  isAdmin,
+  allowRoles('admin'),
   FardoController.restaurarFardoController
 );
 
