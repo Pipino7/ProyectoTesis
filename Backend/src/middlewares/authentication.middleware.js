@@ -22,11 +22,12 @@ const authenticationMiddleware = (req, res, next) => {
         );
       }
 
-      req.userId = decoded.id; 
-      req.email = decoded.email;  
-      req.roles = Array.isArray(decoded.roles) ? decoded.roles : [decoded.roles];  
+      req.userId = decoded.id;
+      req.email = decoded.email;
+      req.roles = decoded.roles; 
 
-      next();  
+
+      next();
     });
   } catch (error) {
     return respondError(req, res, 500, "Ocurrió un error inesperado en la autenticación. Por favor, intenta nuevamente.");

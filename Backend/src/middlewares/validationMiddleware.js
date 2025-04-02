@@ -1,3 +1,4 @@
+
 const validationMiddleware = (schemaFunction, context = null) => (req, res, next) => {
     const schema = typeof schemaFunction === 'function' ? schemaFunction(context) : schemaFunction;
     const bodyToValidate = { ...req.body };
