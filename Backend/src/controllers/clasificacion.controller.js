@@ -2,14 +2,16 @@ import ClasificacionService from '../services/clasificacion.services.js';
 import { respondSuccess, respondError } from '../utils/resHandler.js';
 
 const ClasificacionController = {
-  // Clasificar prendas
+
   clasificarPrendas: async (req, res) => {
     try {
+      console.log("req.user:", req.user); 
+      
       const datos = {
         ...req.body,
-        usuario_id: req.userId,
+        usuario_id: req.user.id, 
       };
-
+  
       const resultado = await ClasificacionService.clasificarPrendas(datos);
       return respondSuccess(req, res, 200, {
         message: 'Clasificación exitosa',
@@ -20,8 +22,9 @@ const ClasificacionController = {
       return respondError(req, res, 500, 'No se pudo clasificar las prendas');
     }
   },
+  
 
-  // Corregir clasificación
+
   corregirClasificacion: async (req, res) => {
     try {
       const datos = {
@@ -40,7 +43,6 @@ const ClasificacionController = {
     }
   },
 
-  // Prendas en bodega
   obtenerPrendasBodega: async (req, res) => {
     try {
       const { codigo } = req.params;
@@ -52,11 +54,11 @@ const ClasificacionController = {
     }
   },
 
-  // Prendas clasificadas agrupadas (por categoría + precio + código de barra)
+  // Prendasclasifi (por categoría + precio + código de barra)
   obtenerPrendasClasificadas: async (req, res) => {
     try {
       const { codigoFardo } = req.params;
-      const prendas = await ClasificacionService.obtenerPrendasClasificadasAgrupadas(codigoFardo);
+      const prendas = await ClasificacionService.obtenerPrendasClasificadas(codigoFardo);
       return respondSuccess(req, res, 200, prendas);
     } catch (error) {
       console.error('Error en obtenerPrendasClasificadas:', error);
@@ -67,13 +69,16 @@ const ClasificacionController = {
   obtenerResumenAgrupadoClasificadas: async (req, res) => {
     try {
       const { codigo } = req.params;
-      const resumen = await ClasificacionService.obtenerResumenAgrupadoDesdePrendas(codigo);
+  
+      const resumen = await ClasificacionService.obtenerResumenConHistorico(codigo);
+  
       return respondSuccess(req, res, 200, resumen);
     } catch (error) {
-      console.error('Error en obtenerResumenAgrupadoClasificadas:', error);
-      return respondError(req, res, 500, 'No se pudo obtener el resumen agrupado');
+      console.error('❌ Error en obtenerResumenAgrupadoClasificadas:', error);
+      return respondError(req, res, 500, 'No se pudo obtener el resumen agrupado de clasificación');
     }
   },
+  
 };
 
 export default ClasificacionController;
