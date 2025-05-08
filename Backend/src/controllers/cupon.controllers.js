@@ -1,9 +1,7 @@
-// src/controllers/cupon.controller.js
 import CuponService from '../services/cupon.services.js';
 import { respondSuccess, respondError } from '../utils/resHandler.js';
 
 const cuponController = {
-  // 1. Crear cupón
   crearCupon: async (req, res) => {
     try {
       console.log('🎫 Petición para crear cupón:', req.validated);
@@ -28,7 +26,6 @@ const cuponController = {
     }
   },
 
-  // 2. Cambiar estado (activar/desactivar)
   cambiarEstado: async (req, res) => {
     try {
       const cupon_id = parseInt(req.params.id);
@@ -54,8 +51,6 @@ const cuponController = {
       return respondError(req, res, 500, 'Error al cambiar estado del cupón: ' + error.message);
     }
   },
-
-  // 3. Editar cupón (parcial)
   editarCupon: async (req, res) => {
     try {
       const cupon_id = parseInt(req.params.id);
@@ -88,11 +83,9 @@ const cuponController = {
   
       const { cupon, items, descuentoTotal } = resultado;
   
-      // 🧼 Limpiar los items: quitar categoria.id o la categoría entera si no es necesaria
       const itemsLimpios = items.map(item => {
         const { categoria, ...resto } = item;
-        return resto; // si quieres quitar completamente categoría
-        // o si quieres mantener el nombre, puedes hacer: { ...resto, categoria: categoria?.nombre }
+        return resto; 
       });
   
       return respondSuccess(req, res, 200, {
@@ -113,8 +106,6 @@ const cuponController = {
       return respondError(req, res, 500, 'Error al simular cupón: ' + error.message);
     }
   },
-
-  // 4. Obtener cupones activos (para dropdown en frontend)
   obtenerCuponesActivos: async (req, res) => {
     try {
       const cupones = await CuponService.obtenerCuponesActivos();
