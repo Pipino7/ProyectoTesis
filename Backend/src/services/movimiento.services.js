@@ -1,18 +1,17 @@
 import AppDataSource from '../config/ConfigDB.js';
-import MovimientoPrenda from '../entities/movimientoPrenda.js';
+import MovimientoPrenda from '../entities/movimiento.js';
 import Fardo from '../entities/fardo.js';
 
 const repo = AppDataSource.getRepository(MovimientoPrenda);
 const fardoRepo = AppDataSource.getRepository(Fardo);
 
 const MovimientoService = {
-  // 1. Registrar un nuevo movimiento (clasificación, venta, etc.)
   registrarMovimiento: async ({ accion, cantidad, fardo_id, usuario_id, categoria_id = null, descripcion = '' }) => {
     try {
       const movimiento = repo.create({
         accion,
         cantidad,
-        fardo: { id: fardo_id },
+        fardo: fardo_id ? { id: fardo_id } : null,
         usuario: { id: usuario_id },
         categoria: categoria_id ? { id: categoria_id } : null,
         descripcion,
@@ -25,7 +24,6 @@ const MovimientoService = {
     }
   },
 
-  // 2. Obtener todos los movimientos de un fardo por código o código de barra
   obtenerMovimientosPorCodigoFardo: async (codigo) => {
     const fardo = await fardoRepo.findOne({
       where: [
@@ -58,7 +56,6 @@ const MovimientoService = {
     }));
   },
 
-  // 3. Obtener movimientos por rango de fechas
   obtenerMovimientosPorFechas: async (fechaInicio, fechaFin) => {
     return await repo
       .createQueryBuilder('movimiento')
@@ -73,7 +70,7 @@ const MovimientoService = {
       .getMany();
   },
 
-  // 4. Resumen de prendas clasificadas por categoría en un fardo
+
   obtenerResumenClasificacionPorFardo: async (codigo) => {
     const fardo = await fardoRepo.findOne({
       where: [
@@ -105,6 +102,48 @@ const MovimientoService = {
       totalClasificadas,
       detalle: resumen,
     };
+  },
+  obtenerResumenClasificacionDetallado: async (codigo) => {
+    const fardo = await fardoRepo.findOne({
+      where: [
+        { codigo_fardo: codigo },
+        { codigo_barra_fardo: codigo },
+      ],
+    });
+  
+    if (!fardo) {
+      throw new Error(`Fardo con código "${codigo}" no encontrado.`);
+    }
+  
+    const resumen = await repo
+    .createQueryBuilder('movimiento')
+    .leftJoin('movimiento.fardo', 'fardo')
+    .leftJoin('movimiento.categoria', 'categoria')
+    .leftJoin('movimiento.usuario', 'usuario')
+    .leftJoin('prenda', 'prenda', 'prenda.fardo_id = fardo.id AND prenda.categoria_id = categoria.id')
+    .select([
+      'categoria.nombre_categoria AS categoria',
+      'movimiento.accion AS accion',
+      'prenda.codigo_barra_prenda AS codigo_barra',
+      'prenda.precio AS precio',
+      'SUM(movimiento.cantidad) AS cantidad'
+    ])
+    .where('movimiento.accion = :accion', { accion: 'clasificacion' })
+    .andWhere('fardo.id = :fardo_id', { fardo_id: fardo.id })
+    .groupBy('categoria.nombre_categoria')
+    .addGroupBy('movimiento.accion')
+    .addGroupBy('prenda.codigo_barra_prenda')
+    .addGroupBy('prenda.precio')
+    .getRawMany();
+  
+  
+  
+    return resumen.map((item) => ({
+      categoria: item.categoria,
+      precio: parseFloat(item.precio),
+      codigo_barra: item.codigo_barra,
+      cantidad: parseInt(item.cantidad),
+    }));
   },
 };
 

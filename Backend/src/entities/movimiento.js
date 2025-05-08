@@ -1,9 +1,8 @@
-// src/entities/movimientoPrenda.js
 import { EntitySchema } from 'typeorm';
 
-const MovimientoPrenda = new EntitySchema({
-  name: 'movimiento_prenda',
-  tableName: 'movimiento_prenda',
+const Movimiento = new EntitySchema({
+  name: 'movimiento',
+  tableName: 'movimiento',
   columns: {
     id: {
       primary: true,
@@ -39,7 +38,7 @@ const MovimientoPrenda = new EntitySchema({
     },
     usuario: {
       type: 'many-to-one',
-      target: 'usuario', // 👈 Corregido: minúsculas
+      target: 'usuario', 
       joinColumn: {
         name: 'usuario_id',
       },
@@ -64,7 +63,25 @@ const MovimientoPrenda = new EntitySchema({
       nullable: true,
       onDelete: 'SET NULL',
     },
+    caja_sesion: {
+      type: 'many-to-one',
+      target: 'caja_sesion',
+      joinColumn: {
+        name: 'caja_sesion_id',
+      },
+      nullable: true, 
+      onDelete: 'SET NULL',
+    },
+    cobro: {
+      type: 'many-to-one',
+      target: 'cobro',
+      joinColumn: {
+        name: 'cobro_id',
+      },
+      nullable: true,
+      onDelete: 'SET NULL',
+    }
   },
 });
 
-export default MovimientoPrenda;
+export default Movimiento;

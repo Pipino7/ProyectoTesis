@@ -1,9 +1,9 @@
 // src/controllers/movimiento.controller.js
-import movimientoService from '../services/movimiento.services.js';
+import MovimientoService from '../services/movimiento.services.js';
 import { respondSuccess, respondError } from '../utils/resHandler.js';
 
 const MovimientoController = {
-  // 1. Registrar movimiento
+
   registrarMovimiento: async (req, res) => {
     try {
       const { accion, cantidad, fardo_id, usuario_id, categoria_id, descripcion } = req.body;
@@ -14,33 +14,49 @@ const MovimientoController = {
     }
   },
 
-  // 2. Obtener movimientos por código de fardo o código de barra
+
   obtenerMovimientosPorCodigo: async (req, res) => {
     try {
       const { codigo } = req.params;
-      const movimientos = await movimientoService.obtenerMovimientosPorCodigoFardo(codigo);
+      const movimientos = await MovimientoService.obtenerMovimientosPorCodigoFardo(codigo);
       return respondSuccess(req, res, 200, movimientos);
     } catch (error) {
       return respondError(req, res, 500, 'Error al obtener movimientos por código: ' + error.message);
     }
   },
 
-  // 3. Obtener movimientos por fechas
   obtenerMovimientosPorFechas: async (req, res) => {
     try {
       const { inicio, fin } = req.query;
-      const movimientos = await movimientoService.obtenerMovimientosPorFechas(inicio, fin);
+      const movimientos = await MovimientoService.obtenerMovimientosPorFechas(inicio, fin);
       return respondSuccess(req, res, 200, movimientos);
     } catch (error) {
       return respondError(req, res, 500, 'Error al obtener movimientos por fechas');
     }
   },
+  obtenerResumenClasificacionDetallado: async (req, res) => {
+    try {
+      const { codigo } = req.params;
+      const data = await MovimientoService.obtenerResumenClasificacionDetallado(codigo);
+  
+      res.status(200).json({
+        state: 'Success',
+        data,
+      });
+    } catch (error) {
+      console.error('Error al obtener resumen detallado:', error);
+      res.status(500).json({
+        state: 'Error',
+        message: error.message,
+      });
+    }
 
-  // 4. Resumen de prendas clasificadas por categoría (por código o código de barra)
+  },
+  
   obtenerResumenClasificacion: async (req, res) => {
     try {
       const { codigo } = req.params;
-      const resumen = await movimientoService.obtenerResumenClasificacionPorFardo(codigo);
+      const resumen = await MovimientoService.obtenerResumenClasificacionPorFardo(codigo);
       return respondSuccess(req, res, 200, resumen);
     } catch (error) {
       console.error('Error en obtenerResumenClasificacion:', error);
