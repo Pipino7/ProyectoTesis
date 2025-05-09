@@ -1,13 +1,12 @@
-// src/entities/usuario.js
 import { EntitySchema } from 'typeorm';
 
 const usuario = new EntitySchema({
-  name: 'usuario',  // Nombre de la entidad
-  tableName: 'usuario',  // Nombre de la tabla en la base de datos
+  name: 'usuario',  
+  tableName: 'usuario',  
   columns: {
     id: {
       primary: true,
-      type: 'int',
+      type: 'int',  
       generated: true,
     },
     nombre: {

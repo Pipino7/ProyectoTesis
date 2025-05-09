@@ -1,23 +1,18 @@
-import Categoria from './categoria.js';
-import Cliente from './cliente.js';
-import DetalleVenta from './detalle_venta.js';
-import Estado from './estado.js';
-import Fardo from './fardo.js';
-import movimiento_prenda from './movimientoPrenda.js';
-import Prenda from './prenda.js';
-import Proveedor from './proveedor.js';
-import Usuario from './usuario.js';
-import Venta from './venta.js';
+// src/entities/index.js
+export { default as Categoria }         from './categoria.js';
+export { default as Cliente }           from './cliente.js';
+export { default as DetalleVenta }      from './detalle_venta.js';
+export { default as Estado }            from './estado.js';
+export { default as Fardo }             from './fardo.js';
+export { default as Movimiento }        from './movimiento.js';
+export { default as Prenda }            from './prenda.js';
+export { default as Proveedor }         from './proveedor.js';
+export { default as Usuario }           from './usuario.js';
+export { default as Venta }             from './venta.js';
+export { default as Cupon }             from './cupon.js';
+export { default as Cobro }             from './cobro.js';
+export { default as Cambio }            from './cambio.js';
+export { default as MetodoPago }        from './metodo_pago.js';
+export { default as CajaSesion }        from './cajaSesion.js';
+export {default as Gasto}               from './gasto.js';
 
-export {
-  Categoria,
-  Cliente,
-  DetalleVenta,
-  Estado,
-  Fardo,
-  movimiento_prenda,
-  Prenda,
-  Proveedor,
-  Usuario,
-  Venta,
-};

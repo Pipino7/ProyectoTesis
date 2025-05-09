@@ -1,7 +1,8 @@
 import { EntitySchema } from 'typeorm';
 
-export const prenda = new EntitySchema({
-  name: 'prenda',
+const Prenda = new EntitySchema({
+
+  name: 'Prenda',
   tableName: 'prenda',
   columns: {
     id: {
@@ -13,10 +14,10 @@ export const prenda = new EntitySchema({
       type: 'decimal',
       precision: 10,
       scale: 2,
-      nullable: true,  
+      nullable: true,
       transformer: {
-        to: (value) => value, 
-        from: (value) => parseFloat(value) 
+        to: (value) => value,
+        from: (value) => parseFloat(value)
       },
     },
     cantidad: {
@@ -26,8 +27,7 @@ export const prenda = new EntitySchema({
     codigo_barra_prenda: {
       type: 'varchar',
       length: 255,
-      nullable: true,  
-      unique: true,
+      nullable: true,
     },
     categoria_id: {
       type: 'int',
@@ -37,9 +37,9 @@ export const prenda = new EntitySchema({
       type: 'int',
       nullable: true,
     },
-    estado_id: {  
+    estado_id: {
       type: 'int',
-      nullable: false, 
+      nullable: false,
     },
   },
   relations: {
@@ -63,7 +63,7 @@ export const prenda = new EntitySchema({
     },
     estado: {
       type: 'many-to-one',
-      target: 'estado', 
+      target: 'estado',
       joinColumn: {
         name: 'estado_id',
       },
@@ -76,6 +76,12 @@ export const prenda = new EntitySchema({
       inverseSide: 'prenda',
     },
   },
+  indices: [
+    {
+      name: 'IDX_UNIQUE_CODIGO_ESTADO',
+      columns: ['codigo_barra_prenda', 'estado_id'],
+      unique: true,
+    },
+  ],
 });
-
-export default prenda;
+export default Prenda;

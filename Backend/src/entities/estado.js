@@ -1,7 +1,7 @@
 import { EntitySchema } from 'typeorm';
 
-export const estado = new EntitySchema({
-  name: 'estado',
+const Estado = new EntitySchema({
+  name: 'Estado',
   tableName: 'estado',
   columns: {
     id: {
@@ -17,4 +17,4 @@ export const estado = new EntitySchema({
   },
 });
 
-export default estado;
+export default Estado;
