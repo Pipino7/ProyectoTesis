@@ -1,94 +1,123 @@
 import Joi from 'joi';
+import clienteSchema from './cliente.schema.js';
 
-const ventaSchema = Joi.object({
-  // Método de pago
-  metodo_pago: Joi.string()
-    .valid('efectivo', 'tarjeta', 'transferencia', 'mixto', 'pendiente')
+
+const detalleItemSchema = Joi.object({
+  codigo_barra: Joi.string()
+    .length(10)
+    .pattern(/^\d+$/)
     .required()
     .messages({
-      'string.base': 'El método de pago debe ser un texto.',
-      'string.empty': 'Debes especificar el método de pago.',
-      'any.only': 'El método de pago debe ser uno de los siguientes: efectivo, tarjeta, transferencia, mixto, pendiente.',
-      'any.required': 'El método de pago es obligatorio.',
+      'string.base': 'El código de barra debe ser texto.',
+      'string.pattern.base': 'El código de barra debe contener solo números.',
+      'string.length': 'El código de barra debe tener exactamente 10 dígitos.',
+      'any.required': 'El código de barra es obligatorio.',
     }),
-
-  // Códigos de prendas
-  codigos_prendas: Joi.array()
-    .items(
-      Joi.string()
-        .length(10)
-        .pattern(/^\d+$/)
-        .required()
-        .messages({
-          'string.base': 'Cada código de prenda debe ser un texto.',
-          'string.pattern.base': 'Cada código de prenda debe contener exactamente 10 dígitos.',
-          'string.empty': 'El código de prenda no puede estar vacío.',
-          'string.length': 'Cada código de prenda debe tener exactamente 10 dígitos.',
-          'any.required': 'El código de prenda es obligatorio.',
-        })
-    )
+  cantidad: Joi.number()
+    .integer()
     .min(1)
     .required()
     .messages({
-      'array.base': 'Debes enviar una lista de códigos de prendas.',
-      'array.min': 'Debes incluir al menos un código de prenda.',
-      'any.required': 'El campo "codigos_prendas" es obligatorio.',
+      'number.base': 'La cantidad debe ser un número.',
+      'number.integer': 'La cantidad debe ser un número entero.',
+      'number.min': 'La cantidad mínima es 1.',
+      'any.required': 'La cantidad es obligatoria.',
     }),
-
-  // Descuentos (opcional)
-  descuento: Joi.array()
-    .items(
-      Joi.object({
-        codigo_barra_prenda: Joi.string()
-          .length(10)
-          .pattern(/^\d+$/)
-          .required()
-          .messages({
-            'string.base': 'El código de barra en el descuento debe ser un texto.',
-            'string.pattern.base': 'El código de barra en el descuento debe contener exactamente 10 dígitos.',
-            'string.empty': 'El código de barra en el descuento no puede estar vacío.',
-            'string.length': 'El código de barra en el descuento debe tener exactamente 10 dígitos.',
-            'any.required': 'El código de barra en el descuento es obligatorio.',
-          }),
-        descuento: Joi.number()
-          .positive()
-          .required()
-          .messages({
-            'number.base': 'El descuento debe ser un número.',
-            'number.positive': 'El descuento debe ser un número positivo mayor a 0.',
-            'any.required': 'El descuento es obligatorio.',
-          }),
-      })
-    )
+  descuento: Joi.number()
+    .min(0)
     .optional()
     .messages({
-      'array.base': 'El descuento debe ser una lista de objetos con códigos de barra y montos.',
+      'number.base': 'El descuento debe ser un número.',
+      'number.min': 'El descuento no puede ser negativo.',
+    }),
+  motivo_descuento: Joi.string()
+    .max(255)
+    .allow(null, '')
+    .optional()
+    .messages({
+      'string.base': 'El motivo del descuento debe ser un texto.',
+      'string.max': 'El motivo del descuento no puede exceder los 255 caracteres.',
+    })
+});
+
+const pagoContadoSchema = Joi.object({
+  efectivo: Joi.number().min(0).optional(),
+  tarjeta: Joi.number().min(0).optional(),
+  transferencia: Joi.number().min(0).optional()
+})
+  .min(1)
+  .messages({
+    'object.min': 'Debes especificar un único método de pago para ventas contado.'
+  });
+
+const pagoMixtoSchema = Joi.object({
+  efectivo: Joi.number().min(0).required().messages({
+    'any.required': 'El pago en efectivo es obligatorio para ventas mixtas.'
+  }),
+  tarjeta: Joi.number().min(0).required().messages({
+    'any.required': 'El pago con tarjeta es obligatorio para ventas mixtas.'
+  }),
+  transferencia: Joi.number().min(0).optional().default(0)
+}).messages({
+  'object.base': 'Para ventas mixtas debes especificar efectivo y tarjeta.'
+});
+
+const ventaSchema = Joi.object({
+  metodo_pago: Joi.string()
+    .valid('contado', 'credito', 'mixto')
+    .required()
+    .messages({
+      'any.only': 'El tipo de venta debe ser contado, credito o mixto.',
+      'any.required': 'El tipo de venta es obligatorio.'
     }),
 
-  // Datos del cliente (opcional, pero obligatorio si es "pendiente")
-  cliente: Joi.object({
-    nombre: Joi.string().required().messages({
-      'string.base': 'El nombre del cliente debe ser un texto.',
-      'string.empty': 'El nombre del cliente no puede estar vacío.',
-      'any.required': 'El nombre del cliente es obligatorio para ventas pendientes.',
+  detalle: Joi.array()
+    .items(detalleItemSchema)
+    .min(1)
+    .required()
+    .messages({
+      'array.base': 'El detalle debe ser una lista de prendas.',
+      'array.min': 'Debes incluir al menos una prenda en el detalle.'
     }),
-    telefono: Joi.string()
-      .pattern(/^\d+$/)
-      .required()
+
+  cliente: Joi.when('metodo_pago', {
+    is: 'credito',
+    then: clienteSchema.required().messages({
+      'any.required': 'Debes ingresar los datos del cliente para ventas a crédito.'
+    }),
+    otherwise: clienteSchema.optional()
+  }),
+
+  pago: Joi.when('metodo_pago', {
+    switch: [
+      { is: 'contado', then: pagoContadoSchema.required() },
+      { is: 'mixto',   then: pagoMixtoSchema.required() }
+    ],
+    otherwise: Joi.object()
+      .pattern(Joi.string(), Joi.number().min(0))
+      .optional()
       .messages({
-        'string.base': 'El teléfono del cliente debe ser un texto.',
-        'string.pattern.base': 'El teléfono debe contener solo números.',
-        'string.empty': 'El teléfono del cliente no puede estar vacío.',
-        'any.required': 'El teléfono del cliente es obligatorio para ventas pendientes.',
-      }),
-  })
-    .when('metodo_pago', {
-      is: 'pendiente',
-      then: Joi.required().messages({
-        'any.required': 'Los datos del cliente son obligatorios para ventas pendientes.',
-      }),
-      otherwise: Joi.optional(),
+        'object.base': 'Si envías un pago parcial en crédito, debe ser un objeto con montos válidos.'
+      })
+  }),
+  
+  generar_ticket_cambio: Joi.boolean()
+    .default(false)
+    .optional()
+    .messages({
+      'boolean.base': 'El campo generar_ticket_cambio debe ser un valor booleano.'
     }),
+
+  cupon: Joi.string()
+    .max(20)
+    .allow(null, '')
+    .optional()
+    .messages({
+      'string.base': 'El cupón debe ser un texto.',
+      'string.max': 'El cupón no puede tener más de 20 caracteres.'
+    })
+}).messages({
+  'object.unknown': 'Se ha enviado un campo no permitido.'
 });
 
 export default ventaSchema;
