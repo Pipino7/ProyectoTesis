@@ -16,6 +16,10 @@ const clasificacionService = {
     return response.data.data;
   },
 
+  async obtenerResumenConHistorico(codigoFardo) {
+    const response = await axios.get(`/clasificacion/resumen-agrupado/${codigoFardo}`);
+    return response.data.data;;  
+  },
   obtenerResumenAgrupadoDesdePrendas: async (codigoFardo) => {
     const response = await axios.get(`/clasificacion/resumen-agrupado/${codigoFardo}`);
     return response.data.data;
