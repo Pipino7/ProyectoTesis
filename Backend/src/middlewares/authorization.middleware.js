@@ -1,15 +1,15 @@
 import { respondError } from "../utils/resHandler.js";
 import { handleError } from "../utils/errorHandler.js";
 
-// Middleware para permitir múltiples roles
 function allowRoles(...rolesPermitidos) {
   return (req, res, next) => {
     try {
-      if (!req.roles || !Array.isArray(req.roles)) {
+      if (!req.user || !Array.isArray(req.user.roles)) {
         return respondError(req, res, 403, "No autorizado. Roles no definidos.");
       }
-
-      const tieneAcceso = req.roles.some((rol) => rolesPermitidos.includes(rol));
+      
+      const tieneAcceso = req.user.roles.some((rol) => rolesPermitidos.includes(rol));
+      
       if (!tieneAcceso) {
         return respondError(
           req,
@@ -19,7 +19,7 @@ function allowRoles(...rolesPermitidos) {
         );
       }
 
-      next(); // Todo bien, continúa
+      next(); 
     } catch (error) {
       handleError(error, `authorization.middleware -> allowRoles [${rolesPermitidos.join(", ")}]`);
       return respondError(req, res, 500, "Error en la verificación de roles.");
@@ -27,7 +27,6 @@ function allowRoles(...rolesPermitidos) {
   };
 }
 
-// Middleware para un solo rol: admin (para compatibilidad)
 function isAdmin(req, res, next) {
   allowRoles("admin")(req, res, next);
 }
