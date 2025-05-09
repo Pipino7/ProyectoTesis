@@ -45,8 +45,23 @@ const generateUniqueBarcode = async () => {
 
   return barcode;
 };
+const generateBarCodeCambio = async () => {
+  const ventaRepository = AppDataSource.getRepository('venta');
+  let codigo;
+  let existe;
+
+  do {
+    const numeros = Math.floor(1000000000 + Math.random() * 9000000000).toString(); // 10 dígitos
+    codigo = `TCC${numeros}`; // Prefijo para diferenciar (TCC = Ticket Código Cambio)
+    existe = await ventaRepository.findOne({ where: { codigo_cambio: codigo } });
+  } while (existe);
+
+  return codigo;
+};
+
 
 export default {
   generateCodigoFardo,
   generateUniqueBarcode,
+  generateBarCodeCambio,
 };

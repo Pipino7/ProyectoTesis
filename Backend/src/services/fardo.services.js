@@ -170,20 +170,6 @@ const FardoService = {
         precioMin = isNaN(precioMin) ? undefined : precioMin;
         precioMax = isNaN(precioMax) ? undefined : precioMax;
 
-        console.log("Parámetros recibidos en getAllFardos (post-validación):", {
-            page,
-            limit,
-            orden,
-            proveedor,
-            categoria,
-            precioMin,
-            precioMax,
-            fechaInicio,
-            fechaFin,
-            codigoFardo,
-        });
-
-        // Construcción de la consulta (igual que antes)
         const query = fardoRepository.createQueryBuilder('fardo')
             .where('fardo.status = :status', { status: 'activo' })
             .leftJoinAndSelect('fardo.categoria', 'categoria')
