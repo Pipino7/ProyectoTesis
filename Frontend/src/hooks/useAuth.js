@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '@/services'; // ← aquí el cambio
+import { auth } from '@/services';
 
 const useAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -14,15 +14,32 @@ const useAuth = () => {
     setLoading(true);
     
     try {
-      const response = await auth.login(email, password); // ← cambio aquí
-      console.log('🎯 Datos finales recibidos:', response);
+      const response = await auth.login(email, password);
 
-      const { token, usuario } = response.data;
+      let token, usuario;
+      
+      if (response.state === "Success" && response.data) {
+        token = response.data.token;
+        usuario = response.data.usuario;
+      } else {
+        token = response.token;
+        usuario = response.usuario;
+      }
 
+      if (!token || !usuario) {
+        console.error('❌ Datos de autenticación incompletos:', { token, usuario, response });
+        throw new Error('Estructura de respuesta inesperada');
+      }
+
+     
       localStorage.setItem('token', token);
       localStorage.setItem('rol', usuario.rol_usuario);
 
       const rol = usuario.rol_usuario;
+
+
+      window.dispatchEvent(new Event('storage'));
+
 
       if (rol === 'admin') {
         navigate('/dashboard');
@@ -31,7 +48,6 @@ const useAuth = () => {
       } else {
         navigate('/no-autorizado');
       }
-
     } catch (error) {
       console.error('❌ Error en login:', error);
       setError('Correo electrónico o contraseña incorrectos.');

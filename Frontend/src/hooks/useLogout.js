@@ -1,4 +1,3 @@
-// src/hooks/useLogout.js
 import { useNavigate } from 'react-router-dom';
 
 const useLogout = () => {
@@ -7,7 +6,14 @@ const useLogout = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('rol');
-    navigate('/login');
+    
+  
+    window.dispatchEvent(new Event('storage'));
+    
+
+    setTimeout(() => {
+      navigate('/login');
+    }, 100);
   };
 
   return handleLogout;
