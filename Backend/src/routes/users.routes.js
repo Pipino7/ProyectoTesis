@@ -1,4 +1,3 @@
-// src/routes/users.routes.js
 "use strict";
 
 import { Router } from 'express';
@@ -8,11 +7,12 @@ import { isAdmin } from '../middlewares/authorization.middleware.js';
 
 const router = Router();
 
-// Ruta para registrar un nuevo usuario
+
+router.get('/verify-session', authenticationMiddleware, usersController.verificarSesion);
+
+
 router.post('/registrar', authenticationMiddleware, isAdmin, usersController.registrarUsuario);
 
-
-// Ruta para eliminar un usuario por su ID
 router.delete('/:id', authenticationMiddleware, isAdmin, usersController.eliminarUsuarioController);
 
 export default router;

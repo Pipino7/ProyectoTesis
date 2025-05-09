@@ -1,27 +1,52 @@
 import express from 'express';
+import ventaController from '../controllers/venta.controller.js';
 import validationMiddleware from '../middlewares/validationMiddleware.js';
+import authenticationMiddleware from '../middlewares/authentication.middleware.js'; // 👈 asegúrate de importar esto
 import ventaSchema from '../schema/venta.schema.js';
-import VentasController from '../controllers/venta.controllers.js';
+import { allowRoles } from '../middlewares/authorization.middleware.js';
+import dbManagerMiddleware from '../middlewares/dbManager.middleware.js'; // 👈 asegúrate de importar esto
+
 
 const router = express.Router();
-
-// Ruta para registrar una venta
+router.use(dbManagerMiddleware); 
 router.post(
-  '/registrar',
-  validationMiddleware(ventaSchema), // Middleware de validación con Joi
-  VentasController.registrarVenta // Llama al controlador
+  '/crear',
+  authenticationMiddleware,  
+  validationMiddleware(ventaSchema, 'body'),
+  ventaController.crearVenta
+);
+router.get(
+  '/validar-prenda/:codigo_barra',
+  authenticationMiddleware,
+  allowRoles('admin', 'ventas'),
+  dbManagerMiddleware, 
+  ventaController.validarPrendaParaVenta
 );
 
-// Ruta para listar ventas (opcional, si ya tienes esta funcionalidad)
 router.get(
-  '/listar',
-  VentasController.listarVentas // Llama al controlador para listar ventas
+  '/resumen-diario',
+  authenticationMiddleware,
+  ventaController.resumenDiario
 );
 
-// Ruta para ver detalle de una venta específica (opcional)
 router.get(
-  '/detalle/:id',
-  VentasController.verDetalleVenta // Llama al controlador para obtener el detalle de la venta
+  '/validar-codigo/:codigo',
+  authenticationMiddleware,
+  allowRoles('admin', 'ventas'),
+  ventaController.validarCodigoCambio
+);
+router.get(
+  '/pendientes',
+  authenticationMiddleware,
+  allowRoles('admin', 'ventas', 'cajero'),
+  ventaController.obtenerVentasPendientes
+);
+
+router.post(
+  '/registrar-cobro',
+  authenticationMiddleware,
+  allowRoles('admin', 'ventas', 'cajero'),
+  ventaController.registrarCobro
 );
 
 export default router;
