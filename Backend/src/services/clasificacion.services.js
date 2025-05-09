@@ -148,11 +148,9 @@ const ClasificacionService = {
         throw new Error('No hay suficientes prendas clasificadas para revertir.');
       }
 
-      // Descontar de la prenda clasificada
       prendaClasificada.cantidad -= cantidad_revertir;
       await queryRunner.manager.save(Prenda, prendaClasificada);
 
-      // Buscar prenda bodega existente sin categoría ni código de barra
       let prendaBodega = await queryRunner.manager.findOne(Prenda, {
         where: {
           fardo: { id: fardo.id },
@@ -241,7 +239,6 @@ const ClasificacionService = {
       .andWhere('prenda.estado = :estado', { estado: 'disponible' })
       .getMany();
 
-    // Agrupar por categoría y precio
     const resumen = {};
 
     for (const p of prendas) {
@@ -260,48 +257,53 @@ const ClasificacionService = {
     return Object.values(resumen);
   },
   
-  obtenerResumenAgrupadoDesdePrendas: async (codigoFardo) => {
+  obtenerResumenConHistorico: async (codigoFardo) => {
     const repo = AppDataSource.getRepository(Prenda);
   
     const resumen = await repo
       .createQueryBuilder('prenda')
-      .leftJoin('prenda.fardo', 'fardo')
+      .leftJoin('prenda.estado', 'estado')
       .leftJoin('prenda.categoria', 'categoria')
+      .leftJoin('prenda.fardo', 'fardo')
       .select([
         'categoria.nombre_categoria AS categoria',
         'prenda.precio AS precio',
         'prenda.codigo_barra_prenda AS codigo_barra',
-        'SUM(prenda.cantidad) AS cantidad'
+        `
+        SUM(
+          CASE 
+            WHEN estado.nombre_estado IN ('disponible', 'vendida') THEN prenda.cantidad 
+            ELSE 0 
+          END
+        ) AS clasificadas`,
+        `
+        SUM(
+          CASE 
+            WHEN estado.nombre_estado = 'disponible' THEN prenda.cantidad 
+            ELSE 0 
+          END
+        ) AS disponibles`
       ])
       .where('fardo.codigo_fardo = :codigo OR fardo.codigo_barra_fardo = :codigo', { codigo: codigoFardo })
       .groupBy('categoria.nombre_categoria')
       .addGroupBy('prenda.precio')
+      .addGroupBy('fardo.id')
       .addGroupBy('prenda.codigo_barra_prenda')
       .orderBy('categoria.nombre_categoria', 'ASC')
       .getRawMany();
   
-    // Reemplazar los valores nulos por un resumen claro si está en bodega
-    const resultado = resumen.map(item => {
-      const isBodega = !item.categoria && !item.codigo_barra;
-  
-      if (isBodega) {
-        return {
-          estado: 'bodega',
-          cantidad: item.cantidad
-        };
-      }
-  
-      return {
-        categoria: item.categoria,
-        precio: item.precio,
-        codigo_barra: item.codigo_barra,
-        cantidad: item.cantidad
-      };
-    });
+    const resultado = resumen.map(item => ({
+      categoria: item.categoria,
+      precio: parseFloat(item.precio),
+      codigo_barra: item.codigo_barra,
+      clasificadas: parseInt(item.clasificadas, 10),
+      disponibles: parseInt(item.disponibles, 10),
+      vendidas: parseInt(item.clasificadas, 10) - parseInt(item.disponibles, 10)
+    }));
   
     return resultado;
-    
   }
+  
 };  
 
 export default ClasificacionService;
