@@ -1,7 +1,7 @@
-import React from 'react';
 import { FaBoxOpen, FaShoppingCart, FaUsers, FaWarehouse, FaSignOutAlt, FaChartLine } from 'react-icons/fa';
 import DashboardModule from '../components/DashboardModule';
 import useLogout from '../hooks/useLogout';
+import { FaCashRegister } from 'react-icons/fa'; 
 
 const Dashboard = () => {
   const rol = localStorage.getItem('rol');
@@ -60,7 +60,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* Cont principal */}
         <div className="lg:ml-64 w-full">
           {/* Header */}
           <header className="bg-white shadow-sm p-4 flex items-center justify-between">
@@ -180,9 +180,10 @@ const Dashboard = () => {
                     iconClass="bg-amber-50 text-amber-600"
                   />
                 </>
-              )}
+            )}
 
-              {(rol === 'ventas' || rol === 'admin') && (
+            {(rol === 'ventas' || rol === 'admin') && (
+              <>
                 <DashboardModule
                   icon={FaShoppingCart}
                   title="Ventas"
@@ -191,7 +192,16 @@ const Dashboard = () => {
                   className="bg-white hover:shadow-md border border-gray-100 shadow-sm"
                   iconClass="bg-green-50 text-green-600"
                 />
-              )}
+                <DashboardModule
+                  icon={FaCashRegister}
+                  title="POS"
+                  description="Punto de venta en tiempo real."
+                  navigateTo="/pos"
+                  className="bg-white hover:shadow-md border border-gray-100 shadow-sm"
+                  iconClass="bg-pink-50 text-pink-600"
+                />
+              </>
+            )}
             </div>
           </div>
 

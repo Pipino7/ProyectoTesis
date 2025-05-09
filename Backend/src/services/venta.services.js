@@ -1,158 +1,391 @@
-// src/services/VentasService.js
-import { Venta, DetalleVenta, Prenda, Estado, Cliente } from '../entities/index.js';
+
 import AppDataSource from '../config/ConfigDB.js';
-import { In } from 'typeorm';
+import VentaHelpers from '../helpers/venta.helpers.js';
+import CuponHelper from '../helpers/cupon.helpers.js';
+import HelperServices from './helpers.services.js';
+import FinancierosHelpers from '../helpers/financieros.helpers.js';
+import { Prenda, Estado, Usuario, Venta, Cobro } from '../entities/index.js';
 
-const VentasService = {
-  registrarVenta: async (datosVenta) => {
-    const { metodo_pago, cliente, codigos_prendas, descuento } = datosVenta;
+const VentaService = {
+  async crearVenta({
+    tipo_venta,
+    usuario_id,
+    detalle,
+    cliente = null,
+    pago = {},
+    cupon = null,
+    generar_ticket_cambio
+  }) {
+    
+    const generarTicket = generar_ticket_cambio === true;
+    
+    const qr = AppDataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
 
+    try {
+      const { estadoDisponible, estadoVendida } = await VentaHelpers.obtenerEstados(qr.manager);
+
+ 
+      const detalleReal = await Promise.all(
+        detalle.map(async item => {
+          const pr = await qr.manager.findOne(Prenda, {
+            where: { codigo_barra_prenda: item.codigo_barra },
+            relations: ['categoria']
+          });
+          if (!pr) throw new Error(`Prenda ${item.codigo_barra} no encontrada`);
+          return { ...item, precio: pr.precio, categoria: pr.categoria };
+        })
+      );
+
+      for (const item of detalleReal) {
+        const pr = await qr.manager.findOne(Prenda, { where: { codigo_barra_prenda: item.codigo_barra } });
+        if (!pr || pr.cantidad < item.cantidad) {
+          throw new Error(`Stock insuficiente para ${item.codigo_barra}`);
+        }
+      }
+
+      let descTotal = 0, motivo = null, cuponEntity = null;
+      let detallesProc = detalleReal;
+      if (cupon) {
+        const res = await CuponHelper.validarYAplicarCupon({
+          cuponCodigo: cupon,
+          prendas: detalleReal,
+          manager: qr.manager
+        });
+        detallesProc = res.items;
+        descTotal = res.descuentoTotal;
+        motivo = `Cupón ${res.cupon.codigo}`;
+        cuponEntity = res.cupon;
+      }
+      const bruto = FinancierosHelpers.calcularMontoBruto(detallesProc.map(item => ({
+        cantidad: item.cantidad,
+        costo_unitario_venta: item.precio
+      })));
+      const descuentoManual = FinancierosHelpers.calcularDescuentos(detallesProc.map(item => ({
+        descuento: item.descuento || 0
+      })));
+      const neto = FinancierosHelpers.calcularMontoNeto(bruto, descuentoManual + (descTotal || 0));
+      
+      const pagado = FinancierosHelpers.calcularTotalPagado(pago);
+      const saldoPend = FinancierosHelpers.calcularSaldoPendiente(neto, pagado);
+      
+      let estadoPago = 'pagada';
+
+      if (tipo_venta === 'credito') {
+        if (saldoPend > 0) {
+          estadoPago = 'pendiente';
+        }
+      } else {
+        if (pagado !== neto) {
+          throw new Error(`Pagos (${pagado}) no coinciden con total (${neto})`);
+        }
+      }
+
+      if (cupon && saldoPend > 0) {
+        throw new Error('No se puede aplicar cupón sin pago completo');
+      }
+
+      const estPagoEnt = await qr.manager.findOne(Estado, { where: { nombre_estado: estadoPago } });
+      if (!estPagoEnt) throw new Error(`Estado de pago "${estadoPago}" no existe`);
+
+      let cliEnt = null;
+      if ((tipo_venta === 'credito' || saldoPend > 0) && cliente?.nombre) {
+        cliEnt = await VentaHelpers.crearClientePendiente(qr.manager, cliente);
+      }
+
+      let codCamb = null;
+      if (!cupon && generarTicket) {
+        codCamb = await HelperServices.generateBarCodeCambio();
+        console.log(`✅ Generando ticket de cambio: ${codCamb}`);
+      } else {
+        console.log(`❌ No se genera ticket de cambio. Valor: ${generarTicket}, Tiene cupón: ${!!cupon}`);
+      }
+      const cajaSesion = await qr.manager.findOne('caja_sesion', {
+        where: { usuario: { id: usuario_id }, estado: { nombre_estado: 'abierta' } },
+        relations: ['estado']
+      });
+      if (!cajaSesion) throw new Error('El usuario no tiene una caja abierta');
+      
+      const ventaEntity = await VentaHelpers.crearVentaEntity(qr.manager, {
+        caja_sesion: { id: cajaSesion.id },
+        tipo_venta,
+        total_venta: neto,
+        saldo_pendiente: saldoPend,
+        estado_pago: estPagoEnt,
+        cliente: cliEnt,
+        cupon: cuponEntity,
+        usuario: { id: usuario_id },
+        codigo_cambio: codCamb
+      });
+
+      for (const item of detallesProc) {
+        await VentaHelpers.procesarItemVenta({
+          item,
+          manager: qr.manager,
+          ventaEntity,
+          estadoDisponible,
+          estadoVendida,
+          usuario_id,
+          totalBruto: bruto,
+          descuento_total: descTotal,
+          motivo_descuento: motivo
+        });
+      }
+
+           await VentaHelpers.registrarCobros(
+             qr.manager,
+             ventaEntity,
+             pago,
+             usuario_id,
+             cajaSesion.id      
+           );
+    await qr.commitTransaction();
+
+    const detallesVenta = detallesProc.map(item => ({
+      codigo_barra: item.codigo_barra,
+      cantidad: item.cantidad,
+      precio_unitario: item.precio,
+      descuento: item.descuento || 0
+    }));
+
+    return {
+      venta_id: ventaEntity.id,
+      codigo_cambio: ventaEntity.codigo_cambio,
+      total_venta: ventaEntity.total_venta,
+      pagado,
+      saldo_pendiente: saldoPend,
+      tipo_venta,
+      cliente: cliEnt,
+      estado_pago: estPagoEnt.nombre_estado,
+      fecha_venta: ventaEntity.fecha_venta,
+      detalle: detallesVenta 
+    };
+
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  },
+  async validarPrendaParaVenta(manager, codigo_barra) {
+    const estadoDisponible = await manager.findOne(Estado, {
+      where: { nombre_estado: 'disponible' },
+    });
+  
+    if (!estadoDisponible) {
+      throw new Error('Estado "disponible" no encontrado.');
+    }
+  
+    const prendasDisponibles = await manager.find(Prenda, {
+      where: {
+        codigo_barra_prenda: codigo_barra,
+        estado: { id: estadoDisponible.id },
+        
+      },
+      relations: ['estado', 'categoria'],
+    });
+  
+    if (!prendasDisponibles || prendasDisponibles.length === 0) {
+      throw new Error('La prenda ya fue vendida o no está disponible.');
+    }
+  
+    const prenda = prendasDisponibles[0];
+  
+    if (!prenda.precio || Number(prenda.precio) <= 0) {
+      throw new Error('La prenda no tiene un precio válido.');
+    }
+  
+    return prenda;
+  },
+  async resumenDiario({ fecha }) {
+    const manager = AppDataSource.manager;
+    return VentaHelpers.resumenDiario(manager, fecha);
+  },
+  
+  async validarCodigoCambio(codigo) {
+    if (!codigo || !codigo.startsWith('TCC')) {
+      throw new Error('Código de cambio inválido. Debe comenzar con TCC.');
+    }
+    
+    try {
+      const venta = await AppDataSource.getRepository(Venta).findOne({
+        where: { codigo_cambio: codigo },
+        relations: ['detallesVenta', 'detallesVenta.prenda', 'detallesVenta.prenda.categoria', 'usuario', 'cliente', 'estado_pago']
+      });
+      
+      if (!venta) {
+        throw new Error(`No se encontró ninguna venta con el código de cambio ${codigo}.`);
+      }
+      
+      if (!venta.detallesVenta || !venta.detallesVenta.length) {
+        throw new Error(`La venta con código ${codigo} no tiene detalles asociados.`);
+      }
+      
+      
+      return {
+        id: venta.id,
+        fecha_venta: venta.fecha_venta,
+        total_venta: venta.total_venta,
+        tipo_venta: venta.tipo_venta,
+        estado_pago: venta.estado_pago.nombre_estado,
+        cliente: venta.cliente ? {
+          id: venta.cliente.id,
+          nombre: venta.cliente.nombre,
+          telefono: venta.cliente.telefono
+        } : null,
+        detalle: venta.detallesVenta.map(detalle => ({
+          id: detalle.id,
+          cantidad: detalle.cantidad,
+          precio_unitario: detalle.costo_unitario_venta,
+          descuento: detalle.descuento,
+          categoria: detalle.prenda.categoria?.nombre_categoria || 'Sin categoría',
+          codigo_barra: detalle.prenda.codigo_barra_prenda
+        }))
+      };
+    } catch (error) {
+      console.error('Error al validar código de cambio:', error);
+      throw new Error(error.message || 'Error al validar el código de cambio.');
+    }
+  },
+
+  async obtenerVentasPendientes() {
+    try {
+      const ventaRepo = AppDataSource.getRepository(Venta);
+      
+      const ventasPendientes = await ventaRepo.find({
+        where: {
+          saldo_pendiente: ventaRepo.createQueryBuilder().where('saldo_pendiente > 0'),
+          estado_pago: { nombre_estado: 'pendiente' }
+        },
+        relations: ['cliente', 'estado_pago'],
+        order: { fecha_venta: 'DESC' }
+      });
+
+      return ventasPendientes.map(venta => ({
+        id: venta.id,
+        fecha_venta: venta.fecha_venta,
+        total_venta: parseFloat(venta.total_venta),
+        saldo_pendiente: parseFloat(venta.saldo_pendiente),
+        tipo_venta: venta.tipo_venta,
+        cliente: venta.cliente ? {
+          id: venta.cliente.id,
+          nombre: venta.cliente.nombre,
+          telefono: venta.cliente.telefono || 'Sin teléfono'
+        } : null
+      }));
+    } catch (error) {
+      console.error('Error al obtener ventas pendientes:', error);
+      throw new Error('No se pudieron obtener las ventas pendientes: ' + error.message);
+    }
+  },
+
+  // Nuevo método para registrar cobros de ventas a crédito
+  async registrarCobro({ venta_id, monto, metodo_pago, usuario_id }) {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // **Validar método de pago**
-      const metodosPagoValidos = ['efectivo', 'tarjeta', 'transferencia', 'mixto', 'pendiente'];
-      if (!metodosPagoValidos.includes(metodo_pago)) {
-        throw new Error(
-          "Método de pago no válido. Métodos aceptados: efectivo, tarjeta, transferencia, mixto, pendiente."
-        );
-      }
-
-      // **Validar datos del cliente si el método de pago es 'pendiente'**
-      let clienteRegistrado = null;
-      if (metodo_pago === 'pendiente') {
-        if (!cliente || !cliente.nombre || !cliente.telefono) {
-          throw new Error(
-            "Los datos del cliente son obligatorios para ventas pendientes. Debe incluir 'nombre' y 'telefono'."
-          );
-        }
-
-        // Buscar cliente existente o registrar uno nuevo
-        clienteRegistrado = await queryRunner.manager.findOne(Cliente, {
-          where: { telefono: cliente.telefono },
-        });
-
-        if (!clienteRegistrado) {
-          clienteRegistrado = queryRunner.manager.create(Cliente, cliente);
-          await queryRunner.manager.save(Cliente, clienteRegistrado);
-        }
-      }
-
-      // **Obtener todos los estados necesarios**
-      const estados = await queryRunner.manager.find(Estado, {
-        where: [
-          { nombre_estado: 'pendiente' },
-          { nombre_estado: 'vendido' },
-          { nombre_estado: 'disponible' },
-        ],
+      const ventaRepo = queryRunner.manager.getRepository(Venta);
+      const venta = await ventaRepo.findOne({ 
+        where: { id: venta_id },
+        relations: ['estado_pago', 'cliente']
       });
 
-      const estadoPrendaPendiente = estados.find((e) => e.nombre_estado === 'pendiente');
-      const estadoPrendaVendido = estados.find((e) => e.nombre_estado === 'vendido');
-      const estadoPrendaDisponible = estados.find((e) => e.nombre_estado === 'disponible');
-
-      if (!estadoPrendaPendiente || !estadoPrendaVendido || !estadoPrendaDisponible) {
-        throw new Error('No se encontraron los estados requeridos: disponible, pendiente o vendido.');
+      if (!venta) {
+        throw new Error('Venta no encontrada');
       }
 
-      // **Agrupar códigos de barra para calcular cantidades**
-      const agrupacion = codigos_prendas.reduce((acumulador, codigo) => {
-        acumulador[codigo] = (acumulador[codigo] || 0) + 1;
-        return acumulador;
-      }, {});
-
-      const codigosBarra = Object.keys(agrupacion);
-
-      // **Obtener todas las prendas necesarias**
-      const prendas = await queryRunner.manager.find(Prenda, {
-        where: { codigo_barra_prenda: In(codigosBarra), estado: { nombre_estado: 'disponible' } },
-      });
-
-      // **Validar existencia y stock**
-      for (const [codigoBarra, cantidad] of Object.entries(agrupacion)) {
-        const prenda = prendas.find((p) => p.codigo_barra_prenda === codigoBarra);
-        if (!prenda || prenda.cantidad <= 0) {
-          throw new Error(
-              `No hay suficiente stock para la prenda con código de barra ${codigoBarra}. ` +
-              `Stock disponible: ${prenda ? prenda.cantidad : 0}, solicitado: ${cantidad}.`
-          );
-      }
+      if (parseFloat(venta.saldo_pendiente) <= 0) {
+        throw new Error('Esta venta ya fue pagada completamente');
       }
 
-      // **Determinar el estado de la venta**
-      const estado_venta = metodo_pago === 'pendiente' ? 'pendiente' : 'vendido';
+      const montoCobro = parseFloat(monto);
+      if (montoCobro <= 0) {
+        throw new Error('El monto debe ser mayor a 0');
+      }
 
-      const estadoVenta = metodo_pago === 'pendiente' ? estadoPrendaPendiente : estadoPrendaVendido;
+      if (montoCobro > parseFloat(venta.saldo_pendiente)) {
+        throw new Error(`El monto no puede ser mayor al saldo pendiente (${venta.saldo_pendiente})`);
+      }
 
-      // **Crear registro de la venta**
-      const venta = queryRunner.manager.create(Venta, {
-        fecha_venta: new Date(),
-        metodo_pago: metodo_pago !== 'pendiente' ? metodo_pago : null, // No incluir método de pago si es pendiente
-        total_venta: 0, // Se calculará después
-        cliente: clienteRegistrado ? { id: clienteRegistrado.id } : null, // Cliente solo para pendientes
-        estado: estadoVenta.id, // Estado de la venta
-      });
-
-      const ventaGuardada = await queryRunner.manager.save(Venta, venta);
-
-      // **Generar detalles de venta**
-      const detallesVenta = prendas.map((prenda) => {
-        const cantidad = agrupacion[prenda.codigo_barra_prenda];
-        const descuentoAplicado =
-          descuento?.find((d) => d.codigo_barra_prenda === prenda.codigo_barra_prenda)?.descuento || 0;
-        const costoUnitario = prenda.precio - descuentoAplicado;
-
-        return {
-          cantidad,
-          costo_unitario_venta: costoUnitario,
-          descuento: descuentoAplicado,
-          venta: ventaGuardada,
-          prenda: prenda.id, // Asociar con el ID de la prenda
-          cliente: clienteRegistrado ? clienteRegistrado.id : null, // Asociar con el ID del cliente si es pendiente
-          estado: estadoVenta.id, // Estado actual (pendiente o vendido)
-        };
-      });
-
-      const detallesVentaEntidades = queryRunner.manager.create(DetalleVenta, detallesVenta);
-      await queryRunner.manager.save(DetalleVenta, detallesVentaEntidades);
-
-      // **Actualizar stock y estado de las prendas**
-      prendas.forEach((prenda) => {
-        const cantidad = agrupacion[prenda.codigo_barra_prenda];
-        prenda.cantidad -= cantidad; // Descontar del stock
-      
-        // Cambiar estado según la cantidad
-        prenda.estado = prenda.cantidad === 0 ? estadoPrendaVendido : estadoPrendaDisponible;
+      const cajaSesion = await queryRunner.manager.findOne('caja_sesion', {
+        where: { usuario: { id: usuario_id }, estado: { nombre_estado: 'abierta' } }
       });
       
-      // Guardar las actualizaciones sin eliminar las prendas
-      await queryRunner.manager.save(Prenda, prendas);
+      if (!cajaSesion) {
+        throw new Error('El usuario no tiene una caja abierta');
+      }
 
-      // **Calcular total de la venta**
-      const totalVenta = detallesVentaEntidades.reduce(
-        (total, detalle) => total + detalle.costo_unitario_venta * detalle.cantidad,
-        0
+      const metodoPagoRepo = queryRunner.manager.getRepository('metodo_pago');
+      const metodoPagoEntity = await metodoPagoRepo.findOne({
+        where: { nombre_metodo: metodo_pago }
+      });
+
+      if (!metodoPagoEntity) {
+        throw new Error(`Método de pago "${metodo_pago}" no encontrado`);
+      }
+
+      const cobroEntity = queryRunner.manager.create(Cobro, {
+        monto: montoCobro,
+        venta: { id: venta_id },
+        usuario: { id: usuario_id },
+        metodoPago: metodoPagoEntity,
+        caja_sesion: cajaSesion
+      });
+
+      await queryRunner.manager.save(cobroEntity);
+
+      await queryRunner.manager.save(Movimiento, {
+        accion: 'cobro_venta',
+        cantidad: montoCobro,
+        observacion: `Cobro de venta #${venta_id}`,
+        caja_sesion: cajaSesion,
+        usuario: { id: usuario_id }
+      });
+
+      const nuevoSaldo = FinancierosHelpers.calcularSaldoPendiente(
+        parseFloat(venta.saldo_pendiente), 
+        montoCobro
       );
+      venta.saldo_pendiente = nuevoSaldo;
 
-      // **Actualizar total en la venta**
-      ventaGuardada.total_venta = totalVenta;
-      await queryRunner.manager.save(Venta, ventaGuardada);
+      if (nuevoSaldo <= 0) {
+        const estadoPagada = await queryRunner.manager.findOne(Estado, {
+          where: { nombre_estado: 'pagada' }
+        });
+        
+        if (!estadoPagada) {
+          throw new Error('Estado "pagada" no encontrado');
+        }
+        
+        venta.estado_pago = estadoPagada;
+        venta.saldo_pendiente = 0; 
+      }
 
+      await queryRunner.manager.save(venta);
+      
       await queryRunner.commitTransaction();
-
+      
       return {
-        message: 'Venta registrada con éxito.',
-        venta: ventaGuardada,
+        id: cobroEntity.id,
+        monto: montoCobro,
+        fecha_cobro: cobroEntity.fecha_cobro,
+        metodo_pago: metodo_pago,
+        venta_id: venta_id,
+        saldo_actualizado: nuevoSaldo,
+        estado_actual: nuevoSaldo <= 0 ? 'pagada' : 'pendiente'
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error('No se pudo registrar la venta. ' + error.message);
+      console.error('Error al registrar cobro:', error);
+      throw new Error(error.message || 'Error al registrar el cobro');
     } finally {
       await queryRunner.release();
     }
-  },
+  }
 };
 
-export default VentasService;
+export default VentaService;

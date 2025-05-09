@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import FardoContext from '@/context/FardoContext'; // el objeto class-like
+import FardoContext from '@/context/FardoContext'; 
 import FiltrosFardos from '@/components/Fardo/ui/FiltrosFardos';
 import FardosList from '@/components/Fardo/FardoList';
 import ReactModal from 'react-modal';
@@ -66,17 +66,11 @@ export default function FardoModule() {
   );
 }
 
-/**
- * Botón hamburguesa dentro del contexto
- */
 function BotonHamburguesa() {
-  // Consumimos el hook del contexto para manipular setMostrarFiltros
   const { setMostrarFiltros } = useFardoContext();
 
   const handleClick = () => {
-    console.log('BotonHamburguesa: se hizo click');
     setMostrarFiltros((prev) => {
-      console.log('BotonHamburguesa: valor anterior de prev:', prev);
       return !prev;
     });
   };

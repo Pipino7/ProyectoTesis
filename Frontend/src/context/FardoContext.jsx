@@ -1,10 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import fardoService from '@/services/fardos';
-import clasificacionService from '@/services/clasificacionService';
+import movimientoService from '@/services/movimientoService';
 
 const ContextoInterno = createContext();
 
-// Hook para acceder al contexto
 export const useFardoContext = () => useContext(ContextoInterno);
 
 const FardoProvider = ({ children }) => {
@@ -45,8 +44,8 @@ const FardoProvider = ({ children }) => {
       await Promise.all(
         data.fardos.map(async (fardo) => {
           try {
-            const resumen = await clasificacionService.obtenerResumenClasificacion(fardo.codigo_fardo);
-            map[fardo.codigo_fardo] = resumen?.totalClasificadas || 0;
+            const resumen = await movimientoService.obtenerResumenClasificacion(fardo.codigo_fardo);
+            map[fardo.codigo_fardo] = resumen?.totalClasificadas || 0;            
           } catch {
             map[fardo.codigo_fardo] = 0;
           }
@@ -59,15 +58,15 @@ const FardoProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [pagina, filtros]); // ✅ React puede comparar objetos si usás bien los keys
+  }, [pagina, filtros]); 
 
-  // Se ejecuta cuando cambian filtros o la página
+
   useEffect(() => {
     const delay = setTimeout(() => {
       cargarFardos();
-    }, 300); // debounce de 300ms
+    }, 300); 
 
-    return () => clearTimeout(delay); // limpia el timeout si cambia antes
+    return () => clearTimeout(delay); 
   }, [cargarFardos]);
 
   return (
