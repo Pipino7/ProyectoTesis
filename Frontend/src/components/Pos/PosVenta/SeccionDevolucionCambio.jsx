@@ -4,15 +4,15 @@ import SeccionDevolucion from './SeccionDevolucion';
 import SeccionCambio from './SeccionCambio';
 
 const SeccionDevolucionCambio = () => {
-  // Estado para controlar qué modo está activo
-  const [modoOperacion, setModoOperacion] = useState(null); // 'devolucion' o 'cambio'
+
+  const [modoOperacion, setModoOperacion] = useState(null); 
   
-  // Establecer el modo (devolución o cambio)
+
   const seleccionarModo = (modo) => {
     setModoOperacion(modo);
   };
 
-  // Renderizar el componente según el modo seleccionado
+
   const renderizarSeccion = () => {
     switch(modoOperacion) {
       case 'devolucion':

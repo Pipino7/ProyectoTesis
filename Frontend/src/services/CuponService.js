@@ -1,7 +1,4 @@
-// src/services/cuponService.js
 import axios from './api.js';
-
-// cuponService.js
 
 const cuponService = {
   simularDescuento: async ({ cupon, detalle }) => {
@@ -14,7 +11,7 @@ const cuponService = {
   
     const response = await axios.post('/cupones/simular-descuento', payload);
   
-    // ✅ Aquí extraes correctamente la respuesta desde el nivel correcto
+
     return response.data.data.resumen;
   },
   

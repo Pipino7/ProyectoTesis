@@ -281,7 +281,7 @@ const VentaService = {
     }
   },
 
-  // Nuevo método para registrar cobros de ventas a crédito
+
   async registrarCobro({ venta_id, monto, metodo_pago, usuario_id }) {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
