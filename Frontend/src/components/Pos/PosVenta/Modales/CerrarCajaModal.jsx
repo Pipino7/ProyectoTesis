@@ -20,8 +20,7 @@ const CerrarCajaModal = ({ isOpen, onClose, onSuccess }) => {
   /* ────────────────────────────────  Hooks  ─────────────────────────────── */
   const { resumen, refreshResumen } = useCajaResumen();
 
-
-
+  const saldoCalculado = useMemo(() => {
     return Number(resumen?.totales?.saldo_calculado ?? 0);
   }, [resumen]);
 

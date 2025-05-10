@@ -1,20 +1,16 @@
-# Usa una imagen ligera y específica de Node.js
-FROM node:16.20.0-slim
 
-# Establece el directorio de trabajo
+FROM node:16.20.0-slim AS deps
 WORKDIR /app
-
-# Copia los archivos de configuración de dependencias
-COPY package*.json ./
-
-# Instala solo las dependencias necesarias para producción
-RUN npm install --only=production
-
-# Copia el resto de los archivos del proyecto
+COPY package.json package-lock.json ./
+RUN npm ci --only=production
+FROM node:16.20.0-slim AS runner
+WORKDIR /app
+RUN useradd --user-group --create-home --shell /bin/false appuser
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Expone el puerto del backend
+ENV NODE_ENV=production \
+    HOST=0.0.0.0 \
+    PORT=3200
+USER appuser
 EXPOSE 3200
-
-# Define el comando de inicio del backend
-CMD ["npm", "start"]
+CMD ["node", "src/server.js"]

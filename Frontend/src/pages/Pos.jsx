@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { cajaService } from '@/services';
 import useModal from '@/hooks/useModal';
 import { useNavigate } from 'react-router-dom';
-import EncabezadoPOS from '@/components/pos/EncabezadoPOS';
-import CajaActiva from '@/components/pos/CajaActiva';
-import CajaInactiva from '@/components/pos/CajaInactiva';
-import ModalAperturaCaja from '@/components/pos/ModalAperturaCaja';
-import PosToolbar from '@/components/pos/PosToolbar';
+import EncabezadoPOS from '@/components/Pos/EncabezadoPOS';
+import CajaActiva from '@/components/Pos/CajaActiva';
+import CajaInactiva from '@/components/Pos/CajaInactiva';
+import ModalAperturaCaja from '@/components/Pos/ModalAperturaCaja';
+import PosToolbar from '@/components/Pos/PosToolbar';
 
 const Pos = () => {
   const navigate = useNavigate();

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import cajaService from '@/services/CajaServices.js';
+import cajaService from '@/services/cajaServices.js';
 
 export function useCajaResumen() {
   const initialResumen = {

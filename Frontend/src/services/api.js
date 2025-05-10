@@ -2,7 +2,7 @@ import axios from 'axios';
 
 
 const API_URL = import.meta.env.VITE_BASE_URL; 
-
+console.log("🌐 API_URL detectada:", API_URL); // 👈 Añade esta línea
 const api = axios.create({
   baseURL: API_URL,
 });

@@ -1,4 +1,4 @@
-// src/schema/clasificacion.schema.js
+// src/schema/clasificacion.Schema.js
 import Joi from 'joi';
 import categoriaSchema from './categoria.schema.js';
 
