@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import formularioClienteSchema from "@/Validation/formularioCliente.schema.js";
+import formularioClienteSchema from "@/Validation/Formulariocliente.schema.js";
 
 const FormularioCliente = ({ cliente, setCliente }) => {
   const [errores, setErrores] = useState({});
