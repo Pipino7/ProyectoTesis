@@ -20,6 +20,12 @@ const Gasto = new EntitySchema({
       length: 255,
       nullable: false,
     },
+    fuera_de_caja: {
+      type: 'boolean',
+      nullable: false,
+      default: false,
+    },
+    
     tipo: {
       type: 'varchar',
       length: 50,
