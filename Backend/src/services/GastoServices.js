@@ -34,6 +34,9 @@ const GastoService = {
       caja_sesion: null
     };
 
+    // Establecer fuera_de_caja basado en el tipo
+    gasto.fuera_de_caja = tipo !== 'caja';
+
     if (usuario_id) {
       const usuario = await manager.findOne(Usuario, { where: { id: usuario_id } });
       if (usuario) gasto.usuario = usuario;
@@ -46,9 +49,10 @@ const GastoService = {
     await MovimientoService.registrarMovimiento({
       accion: 'gasto',
       cantidad: 1,
-      fardo_id:   fardoEncontrado?.id || null,
+      fardo_id: fardoEncontrado?.id || null,
       usuario_id,
-      descripcion: motivo
+      descripcion: motivo,
+      gasto_id: gastoGuardado.id // Pasar el ID del gasto creado
     });
 
     return gastoGuardado;
