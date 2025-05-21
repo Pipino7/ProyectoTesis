@@ -1,6 +1,6 @@
 import AppDataSource from '../config/ConfigDB.js';
 import CajaHelpers, { ESTADOS_CAJA } from '../helpers/caja.helpers.js';
-import { CajaSesion, Estado, Gasto } from '../entities/index.js';
+import { CajaSesion, Estado, Gasto, ResumenCaja } from '../entities/index.js';
 import { Between } from 'typeorm';
 
 const CajaService = {
@@ -345,48 +345,50 @@ const CajaService = {
 
       const estadoCerrada = await CajaHelpers.obtenerEstado(qr.manager, ESTADOS_CAJA.CERRADA);
       
-      const snapshotFinal = {
+      // Crear objeto para ResumenCaja
+      const resumenParaGuardar = {
+        caja_sesion: { id: cajaActiva.id },
+        usuario: { id: usuario_id },
         fecha_apertura: cajaActiva.fecha_apertura,
         fecha_cierre: new Date(),
         monto_inicial: Number(cajaActiva.monto_inicial) || 0,
         monto_final_calculado: montoFinalCalculado,
         monto_final_declarado: monto_declarado ?? montoFinalCalculado,
         diferencia: (monto_declarado ?? montoFinalCalculado) - montoFinalCalculado,
-        totalVentas: totalVentas || 0,
-        totalPrendas: totalPrendas || 0,
-        prendasDevueltas: prendasDevueltas || 0,
-        devolucionesRealizadas: devolucionesRealizadas || 0,
-        totalCobros: totalCobros || 0,
-        totalCobrosDelDia: totalCobrosDelDia || 0,
-        totalCobrosPendientes: totalCobrosPendientes || 0,
-        totalGastos: totalGastos || 0,
-        cobrosPorMetodo: cobrosPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
-        cobrosDelDiaPorMetodo: cobrosDelDiaPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
-        cobrosPendientesPorMetodo: cobrosPendientesPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
-        pendientesPorMetodo: pendientesPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
-        gastosPorMetodo: gastosPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
-        reembolsosPorMetodo: reembolsosPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
-        balancePorMetodo: balancePorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0, total: 0 },
-        ventasConCupon: ventasConCupon || 0,
-        ventasConTicketCambio: ventasConTicketCambio || 0,
-        totalDescuentos: totalDescuentos || 0,
+        total_ventas: totalVentas || 0,
+        total_prendas: totalPrendas || 0,
+        prendas_devueltas: prendasDevueltas || 0,
+        devoluciones_realizadas: devolucionesRealizadas || 0,
+        total_cobros: totalCobros || 0,
+        total_cobros_del_dia: totalCobrosDelDia || 0,
+        total_cobros_pendientes: totalCobrosPendientes || 0,
+        total_gastos: totalGastos || 0,
+        total_descuentos: totalDescuentos || 0,
+        cobros_por_metodo: cobrosPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        cobros_del_dia_por_metodo: cobrosDelDiaPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        cobros_pendientes_por_metodo: cobrosPendientesPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        pendientes_por_metodo: pendientesPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        gastos_por_metodo: gastosPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        reembolsos_por_metodo: reembolsosPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        balance_por_metodo: balancePorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0, total: 0 },
+        ventas_con_cupon: ventasConCupon || 0,
+        ventas_con_ticket_cambio: ventasConTicketCambio || 0,
         observacion: observacion || '',
-        usuario_id: usuario_id,
         timestamp_cierre: new Date().toISOString()
       };
+
+      // Guardar en la tabla ResumenCaja
+      console.log('📊 Guardando el resumen de caja en la nueva entidad ResumenCaja...');
+      await qr.manager.save(ResumenCaja, resumenParaGuardar);
       
       cajaActiva.fecha_cierre = new Date();
       cajaActiva.monto_final = monto_declarado ?? montoFinalCalculado;
       cajaActiva.observacion_cierre = observacion;
       cajaActiva.estado = estadoCerrada; 
       
-      console.log('📊 Guardando snapshot final de la caja...');
-      if (!cajaActiva.resumen_final) {
-        cajaActiva.resumen_final = snapshotFinal;
-      } else {
-        console.warn(`⚠️ La caja ID ${cajaActiva.id} ya tiene un resumen_final. No se sobrescribirá.`);
-      }
-
+      // Ya no guardamos el snapshot en resumen_final
+      // cajaActiva.resumen_final = snapshotFinal;
+      
       await qr.manager.save(CajaSesion, cajaActiva);
       
       const cajaVerificacion = await qr.manager.findOne(CajaSesion, {
@@ -400,12 +402,8 @@ const CajaService = {
       }
       
       console.log(`✅ Caja cerrada exitosamente - ID: ${cajaActiva.id}, Estado: ${cajaVerificacion.estado.nombre_estado}, Fecha cierre: ${cajaActiva.fecha_cierre}`);
+      console.log('✅ Resumen final guardado en la entidad ResumenCaja');
       
-      if (cajaVerificacion.resumen_final) {
-        console.log('✅ Snapshot final guardado correctamente');
-      } else {
-        console.warn('⚠️ No se pudo verificar el guardado del snapshot final');
-      }
       const diferencia = (monto_declarado ?? montoFinalCalculado) - montoFinalCalculado;
       if (Math.abs(diferencia) > 1) {
         console.log(`⚖️ Registrando ajuste por diferencia de $${diferencia} (${diferencia < 0 ? 'faltante' : 'sobrante'})`);
@@ -428,8 +426,7 @@ const CajaService = {
           fecha_cierre: cajaActiva.fecha_cierre,
           monto_inicial: cajaActiva.monto_inicial,
           monto_final: cajaActiva.monto_final,
-          observacion_cierre: cajaActiva.observacion_cierre,
-          resumen_final: snapshotFinal 
+          observacion_cierre: cajaActiva.observacion_cierre
         },
         totales: {
           ventas: totalVentas,
@@ -486,6 +483,185 @@ const CajaService = {
       };
     } catch (error) {
       console.error(`❌ Error obteniendo detalle de caja activa: ${error.message}`);
+      throw error;
+    } finally {
+      await qr.release();
+    }
+  },
+
+  async obtenerHistoricoCajas() {
+    console.log('🔍 Obteniendo histórico de cajas desde la nueva entidad ResumenCaja');
+    
+    const qr = AppDataSource.createQueryRunner();
+    await qr.connect();
+    try {
+      const historicos = await qr.manager.find(ResumenCaja, { 
+        relations: ['caja_sesion', 'usuario'],
+        order: { fecha_cierre: 'DESC' } 
+      });
+      
+      console.log(`✅ Se encontraron ${historicos.length} registros históricos de caja`);
+      
+      return historicos.map(r => ({
+        id: r.id,
+        caja_sesion_id: r.caja_sesion?.id,
+        usuario: r.usuario?.nombre || r.usuario?.email || 'Desconocido',
+        fecha_apertura: r.fecha_apertura,
+        fecha_cierre: r.fecha_cierre,
+        monto_inicial: r.monto_inicial,
+        monto_final_calculado: r.monto_final_calculado,
+        monto_final_declarado: r.monto_final_declarado,
+        diferencia: r.diferencia,
+        total_ventas: r.total_ventas,
+        total_prendas: r.total_prendas,
+        prendas_devueltas: r.prendas_devueltas,
+        total_cobros: r.total_cobros,
+        total_cobros_del_dia: r.total_cobros_del_dia,
+        total_cobros_pendientes: r.total_cobros_pendientes,
+        total_gastos: r.total_gastos,
+        cobros_por_metodo: r.cobros_por_metodo,
+        balance_por_metodo: r.balance_por_metodo,
+        observacion: r.observacion,
+        cerrada_automaticamente: r.cerrada_automaticamente || false
+      }));
+    } catch (error) {
+      console.error(`❌ Error al obtener histórico de cajas: ${error.message}`, error);
+      throw error;
+    } finally {
+      await qr.release();
+    }
+  },
+
+  async cerrarCajaAutomaticamente(caja_id) {
+    console.log(`🔔 CIERRE AUTOMÁTICO DE CAJA - ID: ${caja_id}`);
+    
+    const qr = AppDataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      // Obtener la caja por ID
+      const caja = await qr.manager.findOne(CajaSesion, {
+        where: { id: caja_id },
+        relations: ['estado', 'usuario']
+      });
+      
+      if (!caja) {
+        console.log(`⚠️ Error: No se encontró la caja con ID ${caja_id}`);
+        throw new Error(`Caja con ID ${caja_id} no encontrada.`);
+      }
+      
+      if (caja.estado.nombre_estado !== ESTADOS_CAJA.ABIERTA) {
+        console.log(`⚠️ La caja ID ${caja_id} no está en estado abierta (estado actual: ${caja.estado.nombre_estado})`);
+        throw new Error('La caja no está en estado abierta.');
+      }
+      
+      console.log(`📊 Calculando totales finales para cierre automático de caja ID: ${caja.id}`);
+      const resumenCompleto = await CajaHelpers.calcularTotalesCaja(qr.manager, caja);
+      
+      const { 
+        totalVentas, 
+        totalCobros, 
+        totalGastos, 
+        totalPrendas, 
+        prendasDevueltas,
+        devolucionesRealizadas,
+        cobrosPorMetodo, 
+        cobrosDelDiaPorMetodo,
+        cobrosPendientesPorMetodo,
+        totalCobrosDelDia,
+        totalCobrosPendientes,
+        gastosPorMetodo,
+        reembolsosPorMetodo,
+        balancePorMetodo,
+        pendientesPorMetodo,
+        ventasConCupon,
+        ventasConTicketCambio,
+        totalDescuentos,
+        montoInicial
+      } = resumenCompleto;
+      const montoFinalCalculado = balancePorMetodo?.total || montoInicial || 0;
+      
+      console.log(`💰 Resultado del cálculo final (cierre automático):
+        - Fecha apertura: ${caja.fecha_apertura}
+        - Monto inicial: $${caja.monto_inicial}
+        - Total ventas: $${totalVentas || 0}
+        - Total cobros: $${totalCobros || 0}
+        - Monto final calculado: $${montoFinalCalculado}`);
+      
+      const estadoCerrada = await CajaHelpers.obtenerEstado(qr.manager, ESTADOS_CAJA.CERRADA);
+      const observacion = "Cierre automático generado por el sistema.";
+      
+      // Crear objeto para ResumenCaja
+      const resumenParaGuardar = {
+        caja_sesion: { id: caja.id },
+        usuario: { id: caja.usuario.id },
+        fecha_apertura: caja.fecha_apertura,
+        fecha_cierre: new Date(),
+        monto_inicial: Number(caja.monto_inicial) || 0,
+        monto_final_calculado: montoFinalCalculado,
+        monto_final_declarado: montoFinalCalculado, // Mismo valor que el calculado
+        diferencia: 0, // No hay diferencia en el cierre automático
+        total_ventas: totalVentas || 0,
+        total_prendas: totalPrendas || 0,
+        prendas_devueltas: prendasDevueltas || 0,
+        devoluciones_realizadas: devolucionesRealizadas || 0,
+        total_cobros: totalCobros || 0,
+        total_cobros_del_dia: totalCobrosDelDia || 0,
+        total_cobros_pendientes: totalCobrosPendientes || 0,
+        total_gastos: totalGastos || 0,
+        total_descuentos: totalDescuentos || 0,
+        cobros_por_metodo: cobrosPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        cobros_del_dia_por_metodo: cobrosDelDiaPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        cobros_pendientes_por_metodo: cobrosPendientesPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        pendientes_por_metodo: pendientesPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        gastos_por_metodo: gastosPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        reembolsos_por_metodo: reembolsosPorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0 },
+        balance_por_metodo: balancePorMetodo || { efectivo: 0, tarjeta: 0, transferencia: 0, total: 0 },
+        ventas_con_cupon: ventasConCupon || 0,
+        ventas_con_ticket_cambio: ventasConTicketCambio || 0,
+        observacion: observacion,
+        cerrada_automaticamente: true, // Marcamos como cierre automático
+        timestamp_cierre: new Date().toISOString()
+      };
+      
+      // Guardar en la tabla ResumenCaja
+      console.log('📊 Guardando el resumen de caja automático en la entidad ResumenCaja...');
+      await qr.manager.save(ResumenCaja, resumenParaGuardar);
+      
+      // Actualizar la caja
+      caja.fecha_cierre = new Date();
+      caja.monto_final = montoFinalCalculado;
+      caja.observacion_cierre = observacion;
+      caja.estado = estadoCerrada;
+      
+      await qr.manager.save(CajaSesion, caja);
+      
+      // Verificar que se haya actualizado correctamente
+      const cajaVerificacion = await qr.manager.findOne(CajaSesion, {
+        where: { id: caja.id },
+        relations: ['estado']
+      });
+      
+      if (cajaVerificacion.estado.nombre_estado !== ESTADOS_CAJA.CERRADA) {
+        console.error(`⚠️ ERROR CRÍTICO: La caja ID ${caja.id} no se actualizó correctamente a estado 'cerrada'`);
+        throw new Error('Error al actualizar el estado de la caja a cerrada');
+      }
+      
+      console.log(`✅ Caja cerrada automáticamente - ID: ${caja.id}, Estado: ${cajaVerificacion.estado.nombre_estado}, Fecha cierre: ${caja.fecha_cierre}`);
+      
+      await qr.commitTransaction();
+      return {
+        caja_id: caja.id,
+        fecha_apertura: caja.fecha_apertura,
+        fecha_cierre: caja.fecha_cierre,
+        monto_inicial: caja.monto_inicial,
+        monto_final: caja.monto_final,
+        observacion_cierre: caja.observacion_cierre,
+        cerrada_automaticamente: true
+      };
+    } catch (error) {
+      console.log(`❌ Error al cerrar caja automáticamente: ${error.message}`);
+      await qr.rollbackTransaction();
       throw error;
     } finally {
       await qr.release();

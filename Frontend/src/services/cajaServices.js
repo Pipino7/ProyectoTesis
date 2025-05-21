@@ -129,6 +129,53 @@ const cajaService = {
       throw error;
     }
   },
+  
+  obtenerHistoricoCajas: async () => {
+    try {
+      console.log('🔍 Solicitando histórico de cajas...');
+      const response = await axios.get('/caja/historico');
+      
+      if (response.data?.usuarioInvalido) {
+        console.log('⚠️ Usuario no existe en la base de datos actual:', response.data.mensaje);
+        return {
+          error: true,
+          usuarioInvalido: true,
+          mensaje: response.data.mensaje || 'El usuario ya no existe. Por favor, inicie sesión nuevamente.'
+        };
+      }
+      
+
+      let historicos = [];
+      if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
+        historicos = response.data.data.data;
+        console.log('📊 Datos encontrados en estructura anidada response.data.data.data');
+      } else {
+        historicos = Array.isArray(response.data?.data) ? response.data.data : [];
+        console.log('📊 Datos encontrados en estructura estándar response.data.data');
+      }
+      
+      console.log(`📊 Se recibieron ${historicos.length} registros de históricos de caja`);
+      
+    
+      const historicosConEstado = historicos.map(caja => ({
+        ...caja,
+        cerrada_automaticamente: caja.observacion?.includes('Cierre automático'),
+        etiquetas: caja.observacion?.includes('Cierre automático') ? 
+          [{ tipo: 'advertencia', texto: 'Caja cerrada automáticamente por el sistema' }] : []
+      }));
+      
+      return {
+        data: historicosConEstado,
+        count: historicosConEstado.length
+      };
+    } catch (error) {
+      console.error('❌ Error al obtener histórico de cajas:', error);
+      return {
+        error: true,
+        mensaje: error.message || 'Error al obtener el histórico de cajas'
+      };
+    }
+  }
 };
 
 export default cajaService;

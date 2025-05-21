@@ -1,12 +1,13 @@
 import AppDataSource from '../config/ConfigDB.js';
 import MovimientoPrenda from '../entities/movimiento.js';
 import Fardo from '../entities/fardo.js';
+import { Gasto } from '../entities/index.js';
 
 const repo = AppDataSource.getRepository(MovimientoPrenda);
 const fardoRepo = AppDataSource.getRepository(Fardo);
 
 const MovimientoService = {
-  registrarMovimiento: async ({ accion, cantidad, fardo_id, usuario_id, categoria_id = null, descripcion = '' }) => {
+  registrarMovimiento: async ({ accion, cantidad, fardo_id, usuario_id, categoria_id = null, descripcion = '', gasto_id = null }) => {
     try {
       const movimiento = repo.create({
         accion,
@@ -14,11 +15,28 @@ const MovimientoService = {
         fardo: fardo_id ? { id: fardo_id } : null,
         usuario: { id: usuario_id },
         categoria: categoria_id ? { id: categoria_id } : null,
-        descripcion,
+        observacion: descripcion,
       });
+      
+      // Asociar el gasto al movimiento si se proporciona un ID de gasto
+      if (gasto_id) {
+        const gasto = await AppDataSource.getRepository(Gasto).findOne({ where: { id: gasto_id } });
+        if (gasto) {
+          movimiento.gasto = gasto;
+        }
+      }
+      
       await repo.save(movimiento);
 
-      console.log("✔️ Movimiento registrado:", { accion, cantidad, fardo_id, usuario_id, categoria_id, descripcion });
+      console.log("✔️ Movimiento registrado:", { 
+        accion, 
+        cantidad, 
+        fardo_id, 
+        usuario_id, 
+        categoria_id, 
+        descripcion,
+        gasto_id 
+      });
     } catch (error) {
       console.error('❌ Error al registrar movimiento:', error.message);
     }
@@ -135,8 +153,6 @@ const MovimientoService = {
     .addGroupBy('prenda.codigo_barra_prenda')
     .addGroupBy('prenda.precio')
     .getRawMany();
-  
-  
   
     return resumen.map((item) => ({
       categoria: item.categoria,

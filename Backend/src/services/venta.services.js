@@ -1,10 +1,10 @@
-
 import AppDataSource from '../config/ConfigDB.js';
 import VentaHelpers from '../helpers/venta.helpers.js';
 import CuponHelper from '../helpers/cupon.helpers.js';
 import HelperServices from './helpers.services.js';
 import FinancierosHelpers from '../helpers/financieros.helpers.js';
 import { Prenda, Estado, Usuario, Venta, Cobro } from '../entities/index.js';
+import ResumenVentasService from '../services/ResumenVentasService.js';
 
 const VentaService = {
   async crearVenta({
@@ -133,14 +133,43 @@ const VentaService = {
         });
       }
 
-           await VentaHelpers.registrarCobros(
-             qr.manager,
-             ventaEntity,
-             pago,
-             usuario_id,
-             cajaSesion.id      
-           );
-    await qr.commitTransaction();
+        await VentaHelpers.registrarCobros(
+          qr.manager,
+          ventaEntity,
+          pago,
+          usuario_id,
+          cajaSesion.id      
+          );        const fechaVenta = ventaEntity.fecha_venta.toISOString().slice(0, 10);
+        
+        const categorias = {};
+        detallesProc.forEach(detalle => {
+          const categoria = detalle.categoria?.nombre_categoria || 'Sin categoría';
+          const cantidad = detalle.cantidad || 0;
+          const precioUnitario = detalle.precio || 0;
+          const descuento = detalle.descuento || 0;
+          const monto = (precioUnitario * cantidad) - descuento;
+          
+          if (!categorias[categoria]) {
+            categorias[categoria] = { cantidad: 0, monto: 0 };
+          }
+          
+          categorias[categoria].cantidad += cantidad;
+          categorias[categoria].monto += monto;
+        });
+        
+        await ResumenVentasService.actualizarResumenDelDia(
+          qr.manager,
+          fechaVenta,
+          {
+            total:           ventaEntity.total_venta,
+            descuento_total: descTotal + descuentoManual,
+            metodo_pago:     FinancierosHelpers.detectarMetodoPago(pago),
+            total_prendas:   detallesProc.reduce((sum, d) => sum + d.cantidad, 0),
+            es_credito:      estadoPago === 'pendiente',
+            categorias:      categorias // Incluimos la información de categorías
+          }
+        );
+        await qr.commitTransaction();
 
     const detallesVenta = detallesProc.map(item => ({
       codigo_barra: item.codigo_barra,
@@ -199,9 +228,11 @@ const VentaService = {
   
     return prenda;
   },
-  async resumenDiario({ fecha }) {
+  async resumenDiario({ fecha, page = 1, limit = 50 }) {
     const manager = AppDataSource.manager;
-    return VentaHelpers.resumenDiario(manager, fecha);
+    const offset = (page - 1) * limit;
+    
+    return VentaHelpers.resumenDiario(manager, fecha, { limit, offset });
   },
   
   async validarCodigoCambio(codigo) {
@@ -384,6 +415,48 @@ const VentaService = {
       throw new Error(error.message || 'Error al registrar el cobro');
     } finally {
       await queryRunner.release();
+    }
+  },
+
+  /**
+   * Obtiene un resumen de ventas de los últimos días
+   * @param {number} dias - Número de días a consultar (por defecto: 7)
+   * @returns {Promise<Array>} - Resumen de ventas por día
+   */  async obtenerResumenUltimosDias(dias = 7) {
+    try {
+      // Vamos a utilizar la tabla de resumen para un acceso rápido a los datos
+      return await ResumenVentasService.obtenerResumenUltimosDias(null, dias);
+    } catch (error) {
+      console.error('Error al obtener resumen de últimos días:', error);
+      throw new Error('No se pudo obtener el resumen de ventas');
+    }
+  },
+  
+  /**
+   * Obtiene un resumen consolidado para un rango de fechas
+   * @param {string} fechaInicio - Fecha de inicio en formato 'YYYY-MM-DD'
+   * @param {string} fechaFin - Fecha de fin en formato 'YYYY-MM-DD'
+   * @returns {Promise<Object>} - Objeto con el resumen consolidado
+   */  async obtenerResumenPorRango(fechaInicio, fechaFin) {
+    try {
+      return await ResumenVentasService.obtenerResumenPorRango(null, fechaInicio, fechaFin);
+    } catch (error) {
+      console.error('Error al obtener resumen por rango:', error);
+      throw new Error('No se pudo obtener el resumen por rango');
+    }
+  },
+  
+  /**
+   * Obtiene estadísticas de ventas agrupadas por día de la semana
+   * @param {number} semanas - Número de semanas a considerar (por defecto: 4)
+   * @returns {Promise<Array>} - Estadísticas por día de la semana
+   */
+  async obtenerResumenPorDiaSemana(semanas = 4) {
+    try {
+      return await ResumenVentasService.obtenerResumenPorDiaSemana(null, semanas);
+    } catch (error) {
+      console.error('Error al obtener resumen por día de semana:', error);
+      throw new Error('No se pudo obtener el resumen por día de semana');
     }
   }
 };

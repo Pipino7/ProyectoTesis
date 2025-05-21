@@ -271,6 +271,21 @@ const verificarMontoMinimo = (monto, configuracion = {}, metodo = 'efectivo') =>
   const minimo = montosMinimos[metodo] || 0;
   return Number(monto) >= minimo;
 };
+const detectarMetodoPago = (pagos = {}) => {
+  const efectivo      = Number(pagos.efectivo      || 0);
+  const tarjeta       = Number(pagos.tarjeta       || 0);
+  const transferencia = Number(pagos.transferencia || 0);
+
+  const metodos = [
+    ...(efectivo      > 0 ? ['efectivo']     : []),
+    ...(tarjeta       > 0 ? ['tarjeta']      : []),
+    ...(transferencia > 0 ? ['transferencia']: [])
+  ];
+
+  if (metodos.length === 0) return 'pendiente';
+  if (metodos.length === 1) return metodos[0];
+  return 'mixto';
+};
 
 const calcularTotalesCajaCompletos = (caja, ventas = [], cobros = [], gastos = [], reembolsos = []) => {
   if (isNaN(Number(caja?.monto_inicial))) {
@@ -435,5 +450,6 @@ export default {
   calcularMontoBruto,
   calcularDescuentos,
   calcularMontoNeto,
-  calcularTotalesCajaCompletos
+  calcularTotalesCajaCompletos,
+  detectarMetodoPago
 };

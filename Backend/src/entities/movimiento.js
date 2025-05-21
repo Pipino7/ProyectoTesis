@@ -45,6 +45,13 @@ const Movimiento = new EntitySchema({
       nullable: true,
       onDelete: 'SET NULL',
     },
+    gasto: {
+      type: 'one-to-one',
+      target: 'gasto',
+      joinColumn: { name: 'gasto_id' },
+      nullable: true,
+      onDelete: 'SET NULL',
+    },    
     categoria: {
       type: 'many-to-one',
       target: 'categoria',

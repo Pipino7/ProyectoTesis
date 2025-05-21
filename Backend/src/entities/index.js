@@ -14,5 +14,7 @@ export { default as Cobro }             from './cobro.js';
 export { default as Cambio }            from './cambio.js';
 export { default as MetodoPago }        from './metodo_pago.js';
 export { default as CajaSesion }        from './cajaSesion.js';
-export {default as Gasto}               from './gasto.js';
+export { default as Gasto }             from './gasto.js';
+export { default as ResumenCaja }       from './resumen_caja.js';
+export { default as ResumenVentasDia }  from './resumen_ventas_dia.js';
 

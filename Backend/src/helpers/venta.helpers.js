@@ -10,7 +10,7 @@ import {
   Cambio,
   Gasto,
 } from '../entities/index.js';
-import { Between } from 'typeorm';
+import { Between, In } from 'typeorm';
 import FinancierosHelpers from './financieros.helpers.js';
 
 const VentaHelpers = {
@@ -181,188 +181,177 @@ const VentaHelpers = {
     }
   },
 
-  async resumenDiario(manager, fecha) {
-    const fechaBase = fecha ? new Date(`${fecha}T00:00:00`) : new Date();
-    const start = new Date(fechaBase.setHours(0, 0, 0, 0));
-    const end = new Date(fechaBase.setHours(23, 59, 59, 999));
-  
-    const [
-      ventas,
-      ventasPagadas,
-      totalPrendasResult,
-      totalBrutoResult,
-      pagosRaw,
-      cambios,
-      devolucionesData,
-      totalReembResult,
-      cobrosNegativos,
-      ventasPorCategoria,
-      gastosPorMetodo,
-      totalGastosResult,
-      cajasActivas
-    ] = await Promise.all([
-      manager.find(Venta, {
-        where: { fecha_venta: Between(start, end) },
-        relations: ['cupon'],
-        select: ['id', 'total_venta', 'codigo_cambio']
-      }),
-  
-      manager.count(Venta, {
-        where: qb => {
-          qb.where('fecha_venta BETWEEN :start AND :end', { start, end })
-            .andWhere('estado_pago.nombre_estado = :pagada', { pagada: 'pagada' })
-            .innerJoin('Venta.estado_pago', 'estado_pago');
-        }
-      }),
-  
-      manager.createQueryBuilder(DetalleVenta, 'dv')
-        .innerJoin('dv.venta', 'v', 'v.fecha_venta BETWEEN :start AND :end', { start, end })
-        .select('SUM(dv.cantidad)', 'total')
-        .getRawOne(),
-  
-      manager.createQueryBuilder(DetalleVenta, 'dv')
-        .innerJoin('dv.venta', 'v', 'v.fecha_venta BETWEEN :start AND :end', { start, end })
-        .select('SUM(dv.cantidad * dv.costo_unitario_venta)', 'total')
-        .getRawOne(),
-  
-      manager.createQueryBuilder(Cobro, 'c')
-        .innerJoin('c.venta', 'v', 'v.fecha_venta BETWEEN :start AND :end', { start, end })
-        .innerJoin('c.metodoPago', 'mp')
-        .where('c.monto > 0')
-        .select('mp.nombre_metodo', 'metodo')
-        .addSelect('SUM(c.monto)', 'total')
-        .groupBy('mp.nombre_metodo')
-        .getRawMany(),
-  
-      manager.count(Cambio, {
-        where: qb =>
-          qb.where('venta.fecha_venta BETWEEN :start AND :end', { start, end })
-            .innerJoin('Cambio.venta', 'venta')
-      }),
-  
-      Promise.all([
-        manager.createQueryBuilder(Movimiento, 'm')
-          .where('m.accion = :accion', { accion: 'devolucion' })
-          .andWhere('m.fecha BETWEEN :start AND :end', { start, end })
-          .select('COUNT(DISTINCT m.id)', 'ventasDevueltas')
-          .getRawOne(),
-          
-        manager.createQueryBuilder(Movimiento, 'm')
-          .where('m.accion = :accion', { accion: 'devolucion' })
-          .andWhere('m.fecha BETWEEN :start AND :end', { start, end })
-          .select('SUM(m.cantidad)', 'prendasDevueltas')
-          .getRawOne()
-      ]),
-  
-      manager.createQueryBuilder(Cobro, 'c')
-        .innerJoin('c.venta', 'v')
-        .where('c.monto < 0')
-        .andWhere('v.fecha_venta BETWEEN :start AND :end', { start, end })
-        .select('ABS(SUM(c.monto))', 'total')
-        .getRawOne(),
+  async resumenDiario(manager, fecha, { limit = 50, offset = 0 } = {}) {
+    let fechaBase;
+    if (fecha) {
+      const [year, month, day] = fecha.split('-').map(Number);
+      fechaBase = new Date(year, month - 1, day); 
+    } else {
+      fechaBase = new Date();
+    }
+    
+    const start = new Date(fechaBase);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(fechaBase);
+    end.setHours(23, 59, 59, 999);
+    
+    console.log(`📊 Consultando ventas entre ${start.toISOString()} y ${end.toISOString()} (límite: ${limit}, offset: ${offset})`);
+    
+
+    const totalVentas = await manager.count(Venta, {
+      where: { fecha_venta: Between(start, end) }
+    });
+    
+    console.log(`📊 Total de ventas para la fecha: ${totalVentas}`);
+
+    const ventas = await manager.find(Venta, {
+      where: { fecha_venta: Between(start, end) },
+      relations: [
+        'usuario', 
+        'cliente', 
+        'estado_pago', 
+        'cupon', 
+        'detallesVenta', 
+        'detallesVenta.prenda', 
+        'detallesVenta.prenda.categoria'
+      ],
+      order: { fecha_venta: 'DESC' },
+      skip: offset,
+      take: limit
+    });
+    
+    console.log(`🧾 Se encontraron ${ventas.length} ventas para la página actual`);
+    
+    const ventasIds = ventas.map(v => v.id);
+    const cobros = ventasIds.length > 0 ? await manager.find(Cobro, {
+      where: { venta: { id: In(ventasIds) } },
+      relations: ['metodoPago', 'venta']
+    }) : [];
+
+    const ventasDetalladas = await Promise.all(ventas.map(async (venta) => {
+      const cobrosVenta = cobros.filter(c => c.venta.id === venta.id);
+      
+      const metodosDePago = {};
+      let esMetodoPagoMixto = false;
+      
+      cobrosVenta.forEach(c => {
+        const metodo = c.metodoPago?.nombre_metodo || 'no especificado';
+        metodosDePago[metodo] = (metodosDePago[metodo] || 0) + Number(c.monto);
+      });
+      
+    
+      const metodosUsados = Object.keys(metodosDePago).filter(m => metodosDePago[m] > 0);
+      if (metodosUsados.length > 1) {
+        esMetodoPagoMixto = true;
+      }
+      
+      const metodoPago = esMetodoPagoMixto 
+        ? 'mixto' 
+        : metodosUsados[0] || (venta.saldo_pendiente > 0 ? 'pendiente' : 'no especificado');
+      
+      const detallesPrendas = venta.detallesVenta?.map(detalle => {
+        const precioUnidad = Number(detalle.costo_unitario_venta || 0);
+        const cantidad = Number(detalle.cantidad || 0);
+        const descuento = Number(detalle.descuento || 0);
+        const subtotal = precioUnidad * cantidad - descuento;
         
-      manager.createQueryBuilder(Cobro, 'c')
-        .innerJoin('c.venta', 'v')
-        .innerJoin('c.metodoPago', 'mp')
-        .where('c.monto < 0')
-        .andWhere('v.fecha_venta BETWEEN :start AND :end', { start, end })
-        .select('mp.nombre_metodo', 'metodo')
-        .addSelect('ABS(SUM(c.monto))', 'total')
-        .groupBy('mp.nombre_metodo')
-        .getRawMany(),
+        return {
+          id: detalle.id,
+          codigo_barra: detalle.prenda?.codigo_barra_prenda,
+          categoria: detalle.prenda?.categoria?.nombre_categoria || 'Sin categoría',
+          precio_unitario: precioUnidad,
+          cantidad: cantidad,
+          descuento: descuento,
+          subtotal: subtotal,
+          precio_final_unidad: cantidad > 0 ? (subtotal / cantidad) : 0
+        };
+      }) || [];
       
-      manager.createQueryBuilder(DetalleVenta, 'dv')
-        .innerJoin('dv.venta', 'v', 'v.fecha_venta BETWEEN :start AND :end', { start, end })
-        .innerJoin('dv.prenda', 'p')
-        .innerJoin('p.categoria', 'cat')
-        .select('cat.nombre_categoria', 'nombre')
-        .addSelect('SUM(dv.cantidad)', 'cantidad')
-        .addSelect('SUM(dv.cantidad * dv.costo_unitario_venta)', 'total')
-        .groupBy('cat.nombre_categoria')
-        .getRawMany(),
-      
-      manager.createQueryBuilder(Gasto, 'gasto')
-        .innerJoin('gasto.caja_sesion', 'caja')
-        .innerJoin('gasto.metodo_pago', 'mp')
-        .where('caja.fecha_apertura >= :start', { start })
-        .andWhere('gasto.fecha <= :end', { end })
-        .select('mp.nombre_metodo', 'metodo')
-        .addSelect('SUM(gasto.monto)', 'total')
-        .groupBy('mp.nombre_metodo')
-        .getRawMany(),
-      
-      manager.createQueryBuilder(Gasto, 'gasto')
-        .innerJoin('gasto.caja_sesion', 'caja')
-        .where('caja.fecha_apertura >= :start', { start })
-        .andWhere('gasto.fecha <= :end', { end })
-        .select('SUM(gasto.monto)', 'total')
-        .getRawOne(),
-      
-      manager.find('caja_sesion', {
-        where: [
-          { fecha_apertura: Between(start, end) },
-          { fecha_cierre: Between(start, end) },
-          { fecha_apertura: Between(start, end), fecha_cierre: null }
-        ],
-        relations: ['estado']
-      })
-    ]);
-  
-    const totalNeto = ventas.reduce((sum, v) => sum + Number(v.total_venta), 0);
-    const totalPrendas = Number(totalPrendasResult?.total) || 0;
-    const totalBruto = Number(totalBrutoResult?.total) || 0;
-    const totalDescuentos = totalBruto - totalNeto;
-    const totalReembolsado = Number(totalReembResult?.total) || 0;
-    const totalGastos = Number(totalGastosResult?.total) || 0;
-  
-    const montoInicial = cajasActivas.reduce((sum, caja) => sum + Number(caja.monto_inicial || 0), 0);
+      const totalBruto = detallesPrendas.reduce((sum, d) => sum + (d.precio_unitario * d.cantidad), 0);
+      const totalDescuentos = detallesPrendas.reduce((sum, d) => sum + (d.descuento || 0), 0);
+      const descuentoCupon = venta.cupon 
+        ? Number(venta.descuento_cupon || 0) 
+        : 0;
+      return {
+        id: venta.id,
+        fecha_venta: venta.fecha_venta,
+        total_bruto: totalBruto,
+        total_descuentos: totalDescuentos + descuentoCupon,
+        descuento_cupon: descuentoCupon,
+        total_neto: Number(venta.total_venta || 0),
+        saldo_pendiente: Number(venta.saldo_pendiente || 0),
+        estado_pago: venta.estado_pago?.nombre_estado || 'desconocido',
+        tipo_venta: venta.tipo_venta,
+        metodo_pago: metodoPago,
+        metodos_detallados: metodosDePago,
+        tiene_cupon: !!venta.cupon,
+        cupon: venta.cupon ? {
+          id: venta.cupon.id,
+          codigo: venta.cupon.codigo,
+          descuento: venta.cupon.descuento,
+          tipo_descuento: venta.cupon.tipo_descuento
+        } : null,
+        codigo_cambio: venta.codigo_cambio,
+        usuario: venta.usuario ? {
+          id: venta.usuario.id,
+          nombre: venta.usuario.nombre
+        } : null,
+        cliente: venta.cliente ? {
+          id: venta.cliente.id,
+          nombre: venta.cliente.nombre,
+          telefono: venta.cliente.telefono
+        } : null,
+        prendas: detallesPrendas,
+        total_prendas: detallesPrendas.reduce((sum, d) => sum + d.cantidad, 0)
+      };
+    }));
     
-    const [ventasDevueltasResult, prendasDevueltasResult] = devolucionesData;
-    const devolucionesRealizadas = Number(ventasDevueltasResult?.ventasDevueltas) || 0;
-    const prendasDevueltas = Number(prendasDevueltasResult?.prendasDevueltas) || 0;
-  
-    const pagos = {
-      efectivo: 0,
-      tarjeta: 0,
-      transferencia: 0
+    const resumen = {
+      fecha: fechaBase,
+      total_ventas: totalVentas,
+      ventas_pagadas: ventasDetalladas.filter(v => v.estado_pago === 'pagada').length,
+      ventas_pendientes: ventasDetalladas.filter(v => v.estado_pago === 'pendiente').length,
+      total_prendas: ventasDetalladas.reduce((sum, v) => sum + v.total_prendas, 0),
+      monto_total: ventasDetalladas.reduce((sum, v) => sum + v.total_neto, 0),
+      total_descuentos: ventasDetalladas.reduce((sum, v) => sum + v.total_descuentos, 0),
+      ventas_con_cupon: ventasDetalladas.filter(v => v.tiene_cupon).length,
+      ventas_con_cambio: ventasDetalladas.filter(v => v.codigo_cambio).length,
+      ventas_por_metodo: {
+        efectivo: ventasDetalladas.filter(v => v.metodo_pago === 'efectivo').length,
+        tarjeta: ventasDetalladas.filter(v => v.metodo_pago === 'tarjeta').length,
+        transferencia: ventasDetalladas.filter(v => v.metodo_pago === 'transferencia').length,
+        mixto: ventasDetalladas.filter(v => v.metodo_pago === 'mixto').length,
+        pendiente: ventasDetalladas.filter(v => v.metodo_pago === 'pendiente').length
+      },
+      monto_por_metodo: {
+        efectivo: ventasDetalladas.filter(v => v.metodo_pago === 'efectivo').reduce((sum, v) => sum + v.total_neto, 0),
+        tarjeta: ventasDetalladas.filter(v => v.metodo_pago === 'tarjeta').reduce((sum, v) => sum + v.total_neto, 0),
+        transferencia: ventasDetalladas.filter(v => v.metodo_pago === 'transferencia').reduce((sum, v) => sum + v.total_neto, 0),
+        mixto: ventasDetalladas.filter(v => v.metodo_pago === 'mixto').reduce((sum, v) => sum + v.total_neto, 0),
+        pendiente: ventasDetalladas.filter(v => v.metodo_pago === 'pendiente').reduce((sum, v) => sum + v.total_neto, 0)
+      },
+      ventas_por_categoria: {}
     };
-    pagosRaw.forEach(r => {
-      pagos[r.metodo] = Number(r.total);
+    ventasDetalladas.forEach(venta => {
+      venta.prendas.forEach(prenda => {
+        const categoria = prenda.categoria || 'Sin categoría';
+        if (!resumen.ventas_por_categoria[categoria]) {
+          resumen.ventas_por_categoria[categoria] = {
+            cantidad: 0,
+            monto: 0
+          };
+        }
+        resumen.ventas_por_categoria[categoria].cantidad += prenda.cantidad;
+        resumen.ventas_por_categoria[categoria].monto += prenda.subtotal;
+      });
     });
     
-    const gastos = {
-      efectivo: 0,
-      tarjeta: 0,
-      transferencia: 0
+    return {
+      resumen,
+      ventas: ventasDetalladas,
+      totalVentas
     };
-    gastosPorMetodo.forEach(r => {
-      gastos[r.metodo] = Number(r.total);
-    });
-    
-    const reembolsos = {
-      efectivo: 0,
-      tarjeta: 0,
-      transferencia: 0
-    };
-    cobrosNegativos.forEach(r => {
-      reembolsos[r.metodo] = Number(r.total);
-    });
-    
-    return FinancierosHelpers.calcularResumenDiario(start, {
-      ventas,
-      ventasPagadas,
-      totalPrendas,
-      pagosRecibidos: pagos,
-      reembolsos,
-      gastosPorMetodo: gastos,
-      totalGastos,
-      montoInicial,
-      ventasPorCategoria,
-      devolucionesRealizadas,
-      prendasDevueltas,
-      cambios,
-      totalDescuentos,
-    });
   }
 };
 

@@ -56,11 +56,34 @@ const ventaController = {
   },  
   resumenDiario: async (req, res, next) => {
     try {
-      const { fecha } = req.query; 
-      const data = await ventaService.resumenDiario({ fecha });
-      return res.json({ state: 'Success', data });
+      const { fecha } = req.query;
+      let { page = 1, limit = 50 } = req.query;
+      
+      page = parseInt(page);
+      limit = parseInt(limit);
+      
+      if (isNaN(page) || page < 1) page = 1;
+      if (isNaN(limit) || limit < 1) limit = 50;
+      
+      console.log(`📊 Solicitando resumen diario para fecha: ${fecha || 'hoy'}, página: ${page}, límite: ${limit}`);
+      
+      const { resumen, ventas, totalVentas } = await ventaService.resumenDiario({ fecha, page, limit });
+      
+      const pages = Math.ceil(totalVentas / limit);
+      
+      return respondSuccess(req, res, 200, {
+        resumen,
+        ventas,
+        pagination: {
+          total: totalVentas,
+          page,
+          pages,
+          limit
+        }
+      });
     } catch (err) {
-      return next(err);
+      console.error('❌ Error al obtener resumen diario:', err);
+      return respondError(req, res, 500, 'Error al obtener resumen diario: ' + err.message);
     }
   },
   
