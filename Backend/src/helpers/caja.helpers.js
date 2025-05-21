@@ -111,7 +111,10 @@ const CajaHelpers = {
       }),
   
       manager.find(Gasto, {
-        where: { caja_sesion: { id: caja.id } },
+        where: { 
+          caja_sesion: { id: caja.id },
+          fuera_de_caja: false 
+        },
         relations: ['metodo_pago']
       }),
       manager.find(Movimiento, {
