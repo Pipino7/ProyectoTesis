@@ -33,8 +33,6 @@ const GastoService = {
       fardo: null,
       caja_sesion: null
     };
-
-    // Establecer fuera_de_caja basado en el tipo
     gasto.fuera_de_caja = tipo !== 'caja';
 
     if (usuario_id) {
@@ -52,7 +50,7 @@ const GastoService = {
       fardo_id: fardoEncontrado?.id || null,
       usuario_id,
       descripcion: motivo,
-      gasto_id: gastoGuardado.id // Pasar el ID del gasto creado
+      gasto_id: gastoGuardado.id 
     });
 
     return gastoGuardado;
