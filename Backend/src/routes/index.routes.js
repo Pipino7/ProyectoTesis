@@ -13,6 +13,7 @@ import GastoRouters from './gasto.routes.js';
 import cajaRouters from './caja.routes.js'; 
 import MetodoDePagoRouters from './metodoPago.routes.js'; 
 import cobroRoutes from './cobro.routes.js';
+import resumenRoutes from './resumen.routes.js';
 
 const router = express.Router();
 
@@ -30,6 +31,7 @@ router.use('/gastos', GastoRouters);
 router.use('/caja', cajaRouters); 
 router.use('/metodos-pago', MetodoDePagoRouters); 
 router.use('/cobros', cobroRoutes);
+router.use('/resumen', resumenRoutes);
 router.get('/', (_, res) => {
   res.send('API funcionando');
 });
