@@ -32,7 +32,7 @@
     "joi": "^17.10.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "node-cron": "^4.0.5",
+    "node-cron": "3.0.2",
     "nodemailer": "^6.9.15",
     "pg": "^8.13.0",
     "typeorm": "^0.3.20",
