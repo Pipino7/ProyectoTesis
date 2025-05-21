@@ -47,4 +47,12 @@ router.get(
   CajaController.verificarCajaActiva
 );
 
+// Nueva ruta para obtener histórico de cajas
+router.get(
+  '/historico',
+  authenticationMiddleware,
+  allowRoles('admin', 'ventas'),
+  CajaController.obtenerHistoricoCajas
+);
+
 export default router;
