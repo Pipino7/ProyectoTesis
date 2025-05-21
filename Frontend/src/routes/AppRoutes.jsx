@@ -7,6 +7,17 @@ import PrivateRoute from '../guards/PrivateRoutes';
 import NoAutorizado from '../pages/NoAutorizado';
 import Pos from '../pages/Pos'; 
 import PosVenta from '@/pages/PosVenta';
+import ResumenHistorico from '@/components/Pos/ResumenHistorico';
+
+
+import VentasLayout from '@/components/Ventas/VentasLayout';
+import VentasDashboard from '@/components/Ventas/VentasDashboard';
+import VentasDiarias from '@/components/Ventas/VentasDiarias';
+import VentasHistorial from '@/components/Ventas/VentasHistorial';
+import VentasEstadisticas from '@/components/Ventas/VentasEstadisticas';
+import VentasCambiosDevoluciones from '@/components/Ventas/VentasCambiosDevoluciones';
+import AnalisisVentasPorCategoria from '@/components/Ventas/AnalisisVentasPorCategoria';
+
 import api from '../services/api';
 
 const AppRoutes = () => {
@@ -153,6 +164,36 @@ const AppRoutes = () => {
           userRole={userRole}
         >
           <PosVenta />
+        </PrivateRoute>
+      } />
+      
+      {/* Historial de cajas (accesible para admin y ventas) */}
+      <Route path="/ResumenHistorico" element={
+        <PrivateRoute 
+          isAuthenticated={isAuthenticated} 
+          requiredRoles={['admin', 'ventas']} 
+          userRole={userRole}
+        >
+          <ResumenHistorico />
+        </PrivateRoute>
+      } />
+      
+      {/* Nueva estructura de Ventas con rutas anidadas */}
+      <Route path="/ventas/*" element={
+        <PrivateRoute 
+          isAuthenticated={isAuthenticated} 
+          requiredRoles={['admin', 'ventas']} 
+          userRole={userRole}
+        >          <Routes>
+            <Route element={<VentasLayout />}>
+              <Route index element={<VentasDashboard />} />
+              <Route path="diarias" element={<VentasDiarias />} />
+              <Route path="historial" element={<VentasHistorial />} />
+              <Route path="estadisticas" element={<VentasEstadisticas />} />
+              <Route path="cambios-devoluciones" element={<VentasCambiosDevoluciones />} />
+              <Route path="categorias" element={<AnalisisVentasPorCategoria />} />
+            </Route>
+          </Routes>
         </PrivateRoute>
       } />
 

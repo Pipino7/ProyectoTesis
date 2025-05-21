@@ -1,10 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const PosToolbar = () => {
+  const navigate = useNavigate();
+  
   return (
     <div className="bg-white border-b border-gray-200 px-6 py-3 flex space-x-4 overflow-x-auto">
       <button
-        onClick={() => alert('🧾 Ver ventas del día')}
+        onClick={() => navigate('/ventas')}
         className="bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200 text-sm whitespace-nowrap"
       >
         Ver ventas del día
@@ -21,7 +24,12 @@ const PosToolbar = () => {
       >
         Ver inventario
       </button>
-      {}
+      <button
+        onClick={() => navigate('/ResumenHistorico')}
+        className="bg-purple-100 text-purple-700 px-4 py-2 rounded hover:bg-purple-200 text-sm whitespace-nowrap flex items-center"
+      >
+        <span className="mr-1">📊</span> Historial de cajas
+      </button>
     </div>
   );
 };
