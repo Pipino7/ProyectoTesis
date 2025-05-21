@@ -9,5 +9,6 @@ router.use(authenticationMiddleware);
 router.get('/ultimos-dias', allowRoles('admin'), ResumenController.getUltimosDias);
 router.get('/por-categoria', allowRoles('admin'), ResumenController.getEstadisticasPorCategoria);
 router.get('/por-dia-semana', allowRoles('admin'), ResumenController.getPorDiaSemana);
+router.get('/por-rango', allowRoles('admin'), ResumenController.getPorRangoFechas);
 
 export default router;
