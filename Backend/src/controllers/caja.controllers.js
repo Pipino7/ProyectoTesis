@@ -174,6 +174,35 @@ const CajaController = {
       return respondError(req, res, 400, error.message);
     }
   },
+  
+  async obtenerHistoricoCajas(req, res, next) {
+    try {
+      console.log('🔍 Solicitando histórico de cajas');
+      const usuario_id = req.user.id;
+      
+      const usuarioRepository = AppDataSource.getRepository(Usuario);
+      const usuarioExiste = await usuarioRepository.findOneBy({ id: usuario_id });
+      
+      if (!usuarioExiste) {
+        console.log(`⚠️ Usuario con ID ${usuario_id} no existe en la base de datos`);
+        return respondSuccess(req, res, 200, { 
+          usuarioInvalido: true,
+          mensaje: 'El usuario ya no existe. Por favor, inicie sesión nuevamente.'
+        });
+      }
+      
+      const historicos = await CajaService.obtenerHistoricoCajas();
+      console.log(`✅ Histórico de cajas recuperado: ${historicos.length} registros`);
+      
+      return respondSuccess(req, res, 200, { 
+        data: historicos,
+        count: historicos.length
+      });
+    } catch (error) {
+      console.error(`❌ Error al obtener histórico de cajas: ${error.message}`);
+      return respondError(req, res, 400, error.message);
+    }
+  },
 };
 
 export default CajaController;
